@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -12,6 +13,14 @@ class InstructorCourseController extends Controller
 {
     private const DEFAULT_CHAPTERS = 8;
     private const MAX_CHAPTERS = 255;
+
+    private function forgetCourseCaches(string $slug): void
+    {
+        Cache::forget('student_course:course_lessons:'.$slug);
+        Cache::forget('student_course:course_page_content:'.$slug);
+        Cache::forget('student_course:carousel_courses:all');
+        Cache::forget('landing:courses');
+    }
 
     private function ensureInstructor(): void
     {
@@ -193,6 +202,8 @@ class InstructorCourseController extends Controller
             ]
         );
 
+        $this->forgetCourseCaches($course);
+
         return back()->with('success', 'Lesson chapter berhasil diperbarui.');
     }
 
@@ -227,6 +238,8 @@ class InstructorCourseController extends Controller
             ]
         );
 
+        $this->forgetCourseCaches($course);
+
         return redirect()->route('instructor.courses.lesson', ['course' => $course, 'chapter' => $nextChapter])
             ->with('success', $meta['title'].' chapter '.$nextChapter.' berhasil ditambahkan.');
     }
@@ -258,6 +271,8 @@ class InstructorCourseController extends Controller
                 ]
             );
 
+            $this->forgetCourseCaches('frontend-craft');
+
             return back()->with('success', 'Roadmap title berhasil diperbarui.');
         }
 
@@ -276,6 +291,8 @@ class InstructorCourseController extends Controller
                     'created_at' => $existing ? $existing->created_at : now(),
                 ]
             );
+
+            $this->forgetCourseCaches($course);
 
             return back()->with('success', 'Roadmap title berhasil diperbarui.');
         }

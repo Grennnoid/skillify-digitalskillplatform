@@ -257,6 +257,113 @@
             background: linear-gradient(120deg, #ff6b7d, #ff9068);
         }
 
+        .question-bank-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .question-bank-metric {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(12, 19, 35, 0.72);
+            padding: 12px;
+        }
+
+        .question-bank-metric strong {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .question-bank-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .question-bank-item {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(10, 17, 31, 0.84);
+            padding: 14px;
+        }
+
+        .question-bank-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .question-bank-title {
+            margin: 0 0 6px;
+            font-size: 16px;
+            color: #f1f6ff;
+        }
+
+        .question-bank-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .question-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(15, 24, 43, 0.9);
+            color: #cfe0ff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .question-tag.pop {
+            border-color: rgba(255, 107, 125, 0.38);
+            background: rgba(70, 18, 31, 0.6);
+            color: #ffc9d2;
+        }
+
+        .question-tag.ai {
+            border-color: rgba(69, 208, 255, 0.38);
+            background: rgba(10, 31, 48, 0.65);
+            color: #bfeeff;
+        }
+
+        .question-bank-text {
+            margin: 0 0 12px;
+            color: #deebff;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .question-bank-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .question-bank-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .question-bank-empty {
+            border: 1px dashed var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            color: var(--muted);
+            background: rgba(10, 17, 31, 0.5);
+        }
+
         .table-wrap {
             overflow-x: auto;
             border: 1px solid var(--line);
@@ -308,6 +415,7 @@
         @media (max-width: 1180px) {
             .kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .cards-2 { grid-template-columns: 1fr; }
+            .question-bank-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 920px) {
@@ -324,6 +432,7 @@
         @media (max-width: 640px) {
             .nav { grid-template-columns: 1fr; }
             .kpi { grid-template-columns: 1fr; }
+            .question-bank-summary { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -523,31 +632,190 @@
 
         <section class="panel view" id="manage-quiz">
             <h2>Kelola Quiz</h2>
-            <p class="muted">Tambahkan soal ke course yang kamu kelola.</p>
+            <p class="muted">Tambah soal manual atau generate preview soal AI untuk course yang kamu kelola, termasuk pop quiz setelah chapter tertentu.</p>
+            @php($dosenAiPreview = session('dosen_ai_question_preview'))
 
-            <div class="card">
-                <form class="fields" action="{{ route('dosen.questions.store') }}" method="POST">
-                    @csrf
-                    <select name="quiz_id" required>
-                        <option value="">Pilih course/quiz</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->title }} ({{ ucfirst($course->difficulty) }})</option>
-                        @endforeach
-                    </select>
-                    <textarea name="question_text" placeholder="Tulis soal..." required></textarea>
-                    <select name="question_type" required>
-                        <option value="mcq">MCQ</option>
-                        <option value="essay">Essay</option>
-                        <option value="true_false">True / False</option>
-                    </select>
-                    <select name="difficulty" required>
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                    </select>
-                    <input type="text" name="correct_answer" placeholder="Jawaban benar (opsional)">
-                    <button class="btn btn-primary" type="submit">Simpan Soal</button>
-                </form>
+            <div class="cards-2">
+                <article class="card">
+                    <h3>AI Quiz Generator</h3>
+                    <form class="fields" action="{{ route('dosen.questions.ai.preview') }}" method="POST">
+                        @csrf
+                        <select name="course_key" required>
+                            <option value="">Pilih course target</option>
+                            @foreach($manageableCourses as $course)
+                                <option value="{{ $course->key }}" @selected(old('course_key', $dosenAiPreview['course_key'] ?? '') == $course->key)>
+                                    {{ $course->title }} ({{ ucfirst($course->difficulty) }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <textarea name="generation_notes" placeholder="Comment / lore untuk AI. Jelaskan materi, konsep, gaya pertanyaan, atau vibe pop quiz yang kamu inginkan." required>{{ old('generation_notes', $dosenAiPreview['generation_notes'] ?? '') }}</textarea>
+                        <select name="difficulty" required>
+                            <option value="beginner" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'beginner')>Beginner</option>
+                            <option value="intermediate" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'intermediate')>Intermediate</option>
+                            <option value="advanced" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'advanced')>Advanced</option>
+                        </select>
+                        <input type="number" name="question_count" min="1" max="10" value="{{ old('question_count', $dosenAiPreview['question_count'] ?? 5) }}" placeholder="How many questions?">
+                        <select name="question_type_mode" required>
+                            <option value="mcq" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mcq')>MCQ Only</option>
+                            <option value="essay" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'essay')>Essay Only</option>
+                            <option value="true_false" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'true_false')>True / False Only</option>
+                            <option value="mixed_mcq_essay" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mixed_mcq_essay')>Mixed MCQ + Essay</option>
+                            <option value="mixed_all" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mixed_all')>Mixed All Types</option>
+                        </select>
+                        <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $dosenAiPreview['placement_after_chapter'] ?? '') }}" placeholder="Insert after chapter (optional)">
+                        <label class="muted" style="display:flex;gap:8px;align-items:center;">
+                            <input type="checkbox" name="is_pop_quiz" value="1" @checked(old('is_pop_quiz', $dosenAiPreview['is_pop_quiz'] ?? false))>
+                            Jadikan pop quiz merah yang disisipkan setelah chapter tersebut
+                        </label>
+                        <button class="btn btn-primary" type="submit">Preview Questions</button>
+                    </form>
+                </article>
+
+                <article class="card">
+                    <h3>Tambah Soal Manual</h3>
+                    <form class="fields" action="{{ route('dosen.questions.store') }}" method="POST">
+                        @csrf
+                        <select name="course_key" required>
+                            <option value="">Pilih course/quiz</option>
+                            @foreach($manageableCourses as $course)
+                                <option value="{{ $course->key }}">{{ $course->title }} ({{ ucfirst($course->difficulty) }})</option>
+                            @endforeach
+                        </select>
+                        <textarea name="question_text" placeholder="Tulis soal..." required></textarea>
+                        <select name="question_type" required>
+                            <option value="mcq">MCQ</option>
+                            <option value="essay">Essay</option>
+                            <option value="true_false">True / False</option>
+                        </select>
+                        <select name="difficulty" required>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                        <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="Insert after chapter (optional)">
+                        <label class="muted" style="display:flex;gap:8px;align-items:center;">
+                            <input type="checkbox" name="is_pop_quiz" value="1">
+                            Jadikan pop quiz merah / wajib perfect score
+                        </label>
+                        <input type="text" name="correct_answer" placeholder="Jawaban benar (opsional)">
+                        <textarea name="options_json" placeholder='Pilihan JSON, ex: ["A","B","C","D"]'></textarea>
+                        <button class="btn btn-primary" type="submit">Simpan Soal</button>
+                    </form>
+                </article>
+            </div>
+
+            @if(is_array($dosenAiPreview) && !empty($dosenAiPreview['questions']))
+                <div class="card" style="margin-top:12px;">
+                    <h3>AI Preview: {{ $dosenAiPreview['course_title'] }}</h3>
+                    <p class="muted">Placement:
+                        @if(!empty($dosenAiPreview['placement_after_chapter']))
+                            after chapter {{ $dosenAiPreview['placement_after_chapter'] }}
+                        @else
+                            no pop quiz placement
+                        @endif
+                        &bull; Type mode: {{ str_replace('_', ' ', $dosenAiPreview['question_type_mode']) }}
+                    </p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Question</th>
+                                <th>Type</th>
+                                <th>Difficulty</th>
+                                <th>Answer / Options</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($dosenAiPreview['questions'] as $index => $question)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $question['question_text'] }}</td>
+                                    <td>{{ strtoupper($question['question_type']) }}</td>
+                                    <td>{{ ucfirst($question['difficulty']) }}</td>
+                                    <td>
+                                        <div>{{ $question['correct_answer'] ?: '-' }}</div>
+                                        @if(!empty($question['options_json']))
+                                            <div class="muted">{{ $question['options_json'] }}</div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <form action="{{ route('dosen.questions.ai.save') }}" method="POST" style="margin-top:10px;">
+                        @csrf
+                        <button class="btn btn-primary" type="submit">Save Preview To Question Bank</button>
+                    </form>
+                </div>
+            @endif
+
+            <div class="card" style="margin-top: 12px;">
+                <h3>Question Bank Tersimpan</h3>
+                <p class="muted">Semua soal yang kamu buat atau generate dari AI terkumpul di sini, jadi lebih gampang cek mana pop quiz, mana soal reguler, lalu hapus yang sudah tidak dipakai.</p>
+                @php
+                    $questionBankCollection = collect($questionBankRows);
+                    $questionBankTotal = $questionBankCollection->count();
+                    $questionBankPop = $questionBankCollection->where('is_pop_quiz', true)->count();
+                    $questionBankAi = $questionBankCollection->where('question_origin', 'ai')->count();
+                    $questionBankManual = $questionBankCollection->where('question_origin', 'manual')->count();
+                @endphp
+                <div class="question-bank-summary">
+                    <article class="question-bank-metric">
+                        <strong>{{ $questionBankTotal }}</strong>
+                        <span class="muted">Total stored questions</span>
+                    </article>
+                    <article class="question-bank-metric">
+                        <strong>{{ $questionBankPop }}</strong>
+                        <span class="muted">Pop quiz questions</span>
+                    </article>
+                    <article class="question-bank-metric">
+                        <strong>{{ $questionBankAi }}</strong>
+                        <span class="muted">AI-generated</span>
+                    </article>
+                    <article class="question-bank-metric">
+                        <strong>{{ $questionBankManual }}</strong>
+                        <span class="muted">Manual entries</span>
+                    </article>
+                </div>
+                <div class="question-bank-list">
+                    @forelse($questionBankRows as $row)
+                        <article class="question-bank-item">
+                            <div class="question-bank-header">
+                                <div>
+                                    <h4 class="question-bank-title">{{ $row->quiz_title ?: ($row->course_slug === 'frontend-craft' ? 'Frontend Craft' : $row->course_slug) }}</h4>
+                                    <div class="question-bank-tags">
+                                        <span class="question-tag">{{ strtoupper($row->question_type) }}</span>
+                                        <span class="question-tag">{{ ucfirst($row->difficulty) }}</span>
+                                        <span class="question-tag {{ $row->question_origin === 'ai' ? 'ai' : '' }}">{{ strtoupper($row->question_origin) }}</span>
+                                        @if($row->is_pop_quiz && $row->placement_after_chapter)
+                                            <span class="question-tag pop">Pop quiz after chapter {{ $row->placement_after_chapter }}</span>
+                                        @elseif($row->placement_after_chapter)
+                                            <span class="question-tag">After chapter {{ $row->placement_after_chapter }}</span>
+                                        @else
+                                            <span class="question-tag">General bank</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="question-bank-actions">
+                                    <form action="{{ route('dosen.questions.delete', $row->id) }}" method="POST">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-danger" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <p class="question-bank-text">{{ \Illuminate\Support\Str::limit($row->question_text, 180) }}</p>
+                            <div class="question-bank-meta">
+                                <span class="muted">Created by {{ auth()->user()->name }}</span>
+                                <span class="muted">{{ \Illuminate\Support\Carbon::parse($row->created_at)->format('d M Y H:i') }}</span>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="question-bank-empty">Question bank masih kosong. Tambah soal manual atau generate dari AI dulu, nanti semuanya akan terkumpul rapi di sini.</div>
+                    @endforelse
+                </div>
             </div>
         </section>
 
@@ -583,6 +851,47 @@
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="card" style="margin-top: 12px;">
+                <h3>Attendance Course</h3>
+                <div class="cards-2">
+                    <article class="card">
+                        <strong style="display:block;font-size:22px;">{{ $attendanceStats['total_sessions'] ?? 0 }}</strong>
+                        <span class="muted">Total attendance sessions</span>
+                    </article>
+                    <article class="card">
+                        <strong style="display:block;font-size:22px;">{{ $attendanceStats['attended_sessions'] ?? 0 }}</strong>
+                        <span class="muted">Attendance counted</span>
+                    </article>
+                </div>
+                <p class="muted" style="margin-top:10px;">Students tracked in consistent mode: {{ $attendanceStats['students_in_mode'] ?? 0 }}</p>
+                <div class="table-wrap" style="margin-top:10px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Date</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($attendanceRecords as $attendanceItem)
+                            <tr>
+                                <td>{{ $attendanceItem->student_name ?? 'Student' }}</td>
+                                <td>{{ $attendanceItem->course_title }}</td>
+                                <td>{{ \Illuminate\Support\Carbon::parse($attendanceItem->attendance_date)->format('d M Y') }}</td>
+                                <td>{{ $attendanceItem->chapters_completed }}/{{ $attendanceItem->target_chapters }} chapters</td>
+                                <td>{{ $attendanceItem->is_attended ? 'Counted' : 'In Progress' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5">Belum ada data attendance untuk course kamu.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -759,3 +1068,4 @@
 </script>
 </body>
 </html>
+

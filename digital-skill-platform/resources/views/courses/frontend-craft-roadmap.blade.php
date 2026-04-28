@@ -130,6 +130,30 @@
             transform: translateY(-1px);
         }
 
+        .attendance-trigger {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 183, 76, 0.45);
+            background: linear-gradient(180deg, rgba(44, 24, 6, 0.96), rgba(17, 11, 5, 0.96));
+            color: #ffbf66;
+            font-size: 19px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .attendance-trigger.active {
+            border-color: rgba(255, 197, 92, 0.8);
+            color: #ffe19c;
+            box-shadow: 0 0 0 3px rgba(255, 183, 76, 0.12), 0 12px 26px rgba(48, 26, 8, 0.42);
+        }
+
+        .attendance-trigger:hover {
+            transform: translateY(-1px);
+        }
+
         .profile-menu {
             position: relative;
             margin-left: 2px;
@@ -239,6 +263,60 @@
             font-size: 14px;
         }
 
+        .attendance-summary {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 191, 102, 0.22);
+            border-radius: 999px;
+            background: rgba(16, 13, 8, 0.7);
+            color: #f8dfb7;
+            font-size: 13px;
+        }
+
+        .attendance-summary strong {
+            color: #fff2cf;
+        }
+
+        .pop-quiz-alert {
+            margin-top: 12px;
+            border: 1px solid rgba(255, 107, 125, 0.32);
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(88, 16, 28, 0.88), rgba(24, 9, 15, 0.94));
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pop-quiz-alert strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 17px;
+        }
+
+        .pop-quiz-alert span {
+            color: #ffd8de;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .pop-quiz-btn {
+            flex-shrink: 0;
+            border: 0;
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff4f6;
+            text-decoration: none;
+            background: linear-gradient(135deg, #ff6b7d, #ff9f68);
+            box-shadow: 0 14px 24px rgba(255, 107, 125, 0.22);
+        }
+
         .timeline {
             width: 100%;
             overflow-x: auto;
@@ -285,6 +363,11 @@
             display: contents;
         }
 
+        .step-link.disabled {
+            pointer-events: none;
+            cursor: default;
+        }
+
         .step .node {
             width: 156px;
             height: 156px;
@@ -297,6 +380,27 @@
             text-align: center;
             z-index: 2;
             transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .step.completed .node {
+            background: linear-gradient(145deg, #fff2bd 0%, #ffd45a 42%, #f0ad19 100%);
+            border-color: #ffd45a;
+            box-shadow: 0 16px 30px rgba(218, 160, 24, 0.34);
+        }
+
+        .step.completed .node small,
+        .step.completed .node strong {
+            color: #5f4309;
+        }
+
+        .step.locked .node {
+            opacity: 0.38;
+            filter: saturate(0.55);
+            box-shadow: 0 16px 26px rgba(5, 10, 20, 0.12);
+        }
+
+        .step.locked .meta {
+            opacity: 0.48;
         }
 
         .node small {
@@ -342,6 +446,21 @@
             font-size: 12px;
             line-height: 1.45;
             color: var(--muted);
+        }
+
+        .quiz-pill {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 107, 125, 0.3);
+            background: rgba(92, 16, 28, 0.34);
+            color: #ffd2d9;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .step.up {
@@ -397,22 +516,6 @@
             transform: translateY(0);
         }
 
-        .actions {
-            margin-top: 10px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .start-btn {
-            text-decoration: none;
-            color: #34250c;
-            font-weight: 700;
-            border-radius: 12px;
-            padding: 10px 16px;
-            background: linear-gradient(120deg, #ffdf88, #f2ad18);
-            box-shadow: 0 10px 20px rgba(190, 130, 8, 0.28);
-        }
-
         .qa-drawer {
             position: fixed;
             right: 18px;
@@ -451,6 +554,94 @@
             margin-bottom: 6px;
             color: #9db1d6;
             font-size: 12px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(1, 6, 16, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 60;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .attendance-modal {
+            width: min(460px, 100%);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(8, 14, 27, 0.97);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+            padding: 18px;
+        }
+
+        .attendance-modal h3 {
+            margin: 0 0 8px;
+            font-size: 24px;
+        }
+
+        .attendance-modal p {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .attendance-modal label {
+            display: block;
+            margin-bottom: 6px;
+            color: #d9e9ff;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .attendance-modal input {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(9, 15, 29, 0.82);
+            color: var(--text);
+            padding: 11px 12px;
+            font-size: 14px;
+        }
+
+        .attendance-modal-actions {
+            margin-top: 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .modal-btn.primary {
+            color: #2f230c;
+            background: linear-gradient(120deg, #ffdf88, #f2ad18);
+        }
+
+        .modal-btn.ghost {
+            color: #dce9ff;
+            border: 1px solid var(--line);
+            background: rgba(12, 18, 34, 0.78);
+        }
+
+        .attendance-feedback {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #8fd5ff;
+            min-height: 18px;
         }
 
         @media (max-width: 760px) {
@@ -510,6 +701,11 @@
             .step.down .meta {
                 bottom: 138px;
             }
+
+            .attendance-summary {
+                display: grid;
+                border-radius: 14px;
+            }
         }
     </style>
 </head>
@@ -523,14 +719,21 @@
         <div class="top-actions">
             <a class="link" href="{{ route('courses.frontend-craft.info') }}">Course Info</a>
             <a class="link" href="{{ route('student.dashboard') }}">Dashboard</a>
-            <button class="favorite-btn {{ !empty($isFavorite) ? 'active' : '' }}" id="favoriteBtn" type="button" aria-pressed="{{ !empty($isFavorite) ? 'true' : 'false' }}" aria-label="Favorite course">{{ !empty($isFavorite) ? '?' : '?' }}</button>
+            <button class="attendance-trigger {{ !empty($attendance['enabled']) ? 'active' : '' }}" id="attendanceTrigger" type="button" aria-label="Consistent mode">&#128293;</button>
+            <button class="favorite-btn {{ !empty($isFavorite) ? 'active' : '' }}" id="favoriteBtn" type="button" aria-pressed="{{ !empty($isFavorite) ? 'true' : 'false' }}" aria-label="Favorite course">{!! !empty($isFavorite) ? '&#9733;' : '&#9734;' !!}</button>
             <a class="link" href="{{ route('courses.frontend-craft.info') }}#review">Review</a>
             <a class="link" href="#qa" id="qaToggleLink">Q&A</a>
-            @php
-                $nameParts = preg_split('/\s+/', trim(auth()->user()->name));
-                $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1).substr($nameParts[1] ?? '', 0, 1));
-                $initials = $initials !== '' ? $initials : 'U';
-            @endphp
+@php
+    $nameParts = preg_split('/\s+/', trim(auth()->user()->name));
+    $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1).substr($nameParts[1] ?? '', 0, 1));
+    $initials = $initials !== '' ? $initials : 'U';
+    $attendanceJson = json_encode($attendance ?? [
+        'enabled' => false,
+        'target_chapters' => 1,
+        'today_completed' => 0,
+        'today_attended' => false,
+    ]);
+@endphp
             <div class="profile-menu" id="profileMenuRoadmapFrontend">
                 <a class="profile-trigger" href="{{ route('profile.show') }}" id="profileTriggerRoadmapFrontend" aria-expanded="false" aria-label="User profile">
                     @if(auth()->user()->profile_image)
@@ -557,6 +760,25 @@
 
     <section class="hero">
         <h1>{{ $roadmapTitle }}</h1>
+        <div class="attendance-summary" id="attendanceSummary">
+            <span>Consistent Mode</span>
+            <strong id="attendanceSummaryText">
+                @if(!empty($attendance['enabled']))
+                    {{ $attendance['today_completed'] }}/{{ $attendance['target_chapters'] }} chapter hari ini {{ !empty($attendance['today_attended']) ? '- Attendance counted' : '- Belum memenuhi target' }}
+                @else
+                    Belum aktif
+                @endif
+            </strong>
+        </div>
+        @if(!empty($pendingPopQuiz))
+            <div class="pop-quiz-alert">
+                <div>
+                    <strong>Pop Quiz unlocked after Chapter {{ $pendingPopQuiz['placement_after_chapter'] }}</strong>
+                    <span>Kamu harus menyelesaikan {{ $pendingPopQuiz['question_count'] }} soal ini dengan benar sebelum chapter berikutnya terbuka.</span>
+                </div>
+                <a class="pop-quiz-btn" href="{{ $pendingPopQuiz['take_quiz_url'] }}">Take Quiz Now</a>
+            </div>
+        @endif
     </section>
 
     <div class="controls">
@@ -568,13 +790,24 @@
         <div class="road">
             <ol class="steps">
                 @foreach(($chapters ?? []) as $chapter)
-                    <li class="step {{ $chapter['position'] }}">
-                        <a class="step-link" href="{{ $chapter['href'] }}">
+                    <li class="step {{ $chapter['position'] }} {{ !empty($chapter['is_completed']) ? 'completed' : '' }} {{ !empty($chapter['is_locked']) ? 'locked' : '' }}">
+                        <a class="step-link {{ empty($chapter['href']) ? 'disabled' : '' }}" href="{{ $chapter['href'] ?? '#' }}">
                             <div class="node"><div><small>STEP</small><strong>{{ str_pad((string) $chapter['number'], 2, '0', STR_PAD_LEFT) }}</strong></div></div>
                             <article class="meta">
-                                <span class="tag">{{ $chapter['video_ready'] ? 'Video Ready' : 'Chapter' }}</span>
+                                <span class="tag">
+                                    @if(!empty($chapter['is_completed']))
+                                        Completed
+                                    @elseif(!empty($chapter['is_locked']))
+                                        Locked
+                                    @else
+                                        {{ $chapter['video_ready'] ? 'Video Ready' : 'Chapter' }}
+                                    @endif
+                                </span>
                                 <h3>{{ $chapter['title'] }}</h3>
                                 <p>{{ $chapter['description'] }}</p>
+                                @if(!empty($chapter['pop_quiz']))
+                                    <span class="quiz-pill">{{ !empty($chapter['pop_quiz']['is_passed']) ? 'Pop Quiz Passed' : 'Pop Quiz Gate' }}</span>
+                                @endif
                             </article>
                         </a>
                     </li>
@@ -583,9 +816,6 @@
         </div>
     </div>
 
-    <div class="actions">
-        <a class="start-btn" href="{{ route('courses.frontend-craft.chapter', ['chapter' => 1]) }}">Start Chapter 1</a>
-    </div>
 </div>
 
 <aside class="qa-drawer" id="qaDrawer">
@@ -609,6 +839,31 @@
     </div>
 </aside>
 
+<div class="modal-overlay" id="attendanceModal">
+    <div class="attendance-modal">
+        <h3>Consistent Mode</h3>
+        <p>Kamu akan masuk ke mode kehadiran. Set target chapter harianmu, lalu sistem akan menghitung attendance begitu target itu terpenuhi.</p>
+        <label for="attendanceTargetInput">Target chapter per hari</label>
+        <input id="attendanceTargetInput" type="number" min="1" max="{{ count($chapters ?? []) }}" value="{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }}">
+        <p id="attendanceProgressText">
+            Hari ini: <strong>{{ (int)($attendance['today_completed'] ?? 0) }}/{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }}</strong>
+            @if(!empty($attendance['today_attended']))
+                dan attendance sudah tercatat.
+            @else
+                dan attendance belum tercatat.
+            @endif
+        </p>
+        <div class="attendance-modal-actions">
+            <button class="modal-btn ghost" type="button" id="attendanceDisableBtn">Turn Off</button>
+            <div style="display:flex; gap:10px;">
+                <button class="modal-btn ghost" type="button" id="attendanceCloseBtn">Close</button>
+                <button class="modal-btn primary" type="button" id="attendanceSaveBtn">Save Target</button>
+            </div>
+        </div>
+        <div class="attendance-feedback" id="attendanceFeedback"></div>
+    </div>
+</div>
+
 <script>
     const timeline = document.getElementById('timeline');
     const scrollLeftBtn = document.getElementById('scrollLeftBtn');
@@ -618,6 +873,16 @@
     const profileTrigger = document.getElementById('profileTriggerRoadmapFrontend');
     const qaDrawer = document.getElementById('qaDrawer');
     const qaToggleLink = document.getElementById('qaToggleLink');
+    const attendanceTrigger = document.getElementById('attendanceTrigger');
+    const attendanceModal = document.getElementById('attendanceModal');
+    const attendanceTargetInput = document.getElementById('attendanceTargetInput');
+    const attendanceSaveBtn = document.getElementById('attendanceSaveBtn');
+    const attendanceDisableBtn = document.getElementById('attendanceDisableBtn');
+    const attendanceCloseBtn = document.getElementById('attendanceCloseBtn');
+    const attendanceFeedback = document.getElementById('attendanceFeedback');
+    const attendanceSummaryText = document.getElementById('attendanceSummaryText');
+    const attendanceProgressText = document.getElementById('attendanceProgressText');
+    let attendanceState = {!! $attendanceJson !!};
     let holdTimer = null;
 
     timeline.addEventListener('wheel', (event) => {
@@ -675,7 +940,7 @@
             const active = !!data.is_favorite;
             favoriteBtn.classList.toggle('active', active);
             favoriteBtn.setAttribute('aria-pressed', String(active));
-            favoriteBtn.textContent = active ? '?' : '?';
+            favoriteBtn.textContent = active ? '\u2605' : '\u2606';
         } catch (error) {
             // Keep UI stable if request fails.
         }
@@ -710,6 +975,81 @@
             }
         });
     }
+
+    function renderAttendanceState() {
+        const enabled = !!attendanceState.enabled;
+        attendanceTrigger?.classList.toggle('active', enabled);
+
+        if (attendanceSummaryText) {
+            attendanceSummaryText.textContent = enabled
+                ? `${attendanceState.today_completed}/${attendanceState.target_chapters} chapter hari ini ${attendanceState.today_attended ? '- Attendance counted' : '- Belum memenuhi target'}`
+                : 'Belum aktif';
+        }
+
+        if (attendanceProgressText) {
+            attendanceProgressText.innerHTML = `Hari ini: <strong>${attendanceState.today_completed}/${attendanceState.target_chapters}</strong> ${attendanceState.today_attended ? 'dan attendance sudah tercatat.' : 'dan attendance belum tercatat.'}`;
+        }
+
+        if (attendanceTargetInput) {
+            attendanceTargetInput.value = attendanceState.target_chapters || 1;
+        }
+    }
+
+    async function updateConsistentMode(enabled) {
+        if (!attendanceTargetInput) {
+            return;
+        }
+
+        attendanceFeedback.textContent = 'Menyimpan setting attendance...';
+        const formData = new FormData();
+        formData.append('enabled', enabled ? '1' : '0');
+        formData.append('target_chapters', attendanceTargetInput.value || '1');
+
+        try {
+            const response = await fetch('{{ route('courses.consistent-mode.update', 'frontend-craft') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                attendanceFeedback.textContent = data.message || 'Gagal menyimpan consistent mode.';
+                return;
+            }
+
+            attendanceState = data.attendance;
+            attendanceFeedback.textContent = data.message || 'Consistent mode berhasil disimpan.';
+            renderAttendanceState();
+        } catch (error) {
+            attendanceFeedback.textContent = 'Terjadi kendala saat menyimpan consistent mode.';
+        }
+    }
+
+    attendanceTrigger?.addEventListener('click', () => {
+        attendanceModal?.classList.add('open');
+        renderAttendanceState();
+        attendanceFeedback.textContent = '';
+    });
+
+    attendanceCloseBtn?.addEventListener('click', () => {
+        attendanceModal?.classList.remove('open');
+    });
+
+    attendanceModal?.addEventListener('click', (event) => {
+        if (event.target === attendanceModal) {
+            attendanceModal.classList.remove('open');
+        }
+    });
+
+    attendanceSaveBtn?.addEventListener('click', () => updateConsistentMode(true));
+    attendanceDisableBtn?.addEventListener('click', () => updateConsistentMode(false));
+    renderAttendanceState();
 </script>
+@include('partials.student-chatbot')
 </body>
 </html>

@@ -578,5 +578,6 @@
         });
     });
 </script>
+@include('partials.student-chatbot')
 </body>
 </html>

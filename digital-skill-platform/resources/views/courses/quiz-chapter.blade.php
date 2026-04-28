@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -82,14 +82,6 @@
             text-decoration: none;
             font-size: 12px;
             background: rgba(12, 19, 35, 0.72);
-        }
-
-        .chip-primary {
-            border: 0;
-            background: linear-gradient(120deg, var(--gold), var(--gold-2));
-            color: #2c210f;
-            font-weight: 700;
-            cursor: pointer;
         }
 
         .chip:hover { border-color: rgba(124, 246, 214, 0.52); }
@@ -274,6 +266,17 @@
             background: linear-gradient(120deg, rgba(69, 208, 255, 0.2), rgba(124, 246, 214, 0.18));
         }
 
+        .chapter-item.completed {
+            border-color: rgba(246, 216, 122, 0.48);
+            background: linear-gradient(135deg, rgba(255, 223, 136, 0.24), rgba(242, 173, 24, 0.16));
+        }
+
+        .chapter-item.locked {
+            opacity: 0.42;
+            pointer-events: none;
+            filter: saturate(0.65);
+        }
+
         .chapter-item small { color: var(--muted); font-size: 11px; }
 
         .status-row {
@@ -361,6 +364,68 @@
             color: var(--muted);
         }
 
+        .quiz-gate-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 16, 0.62);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 100;
+        }
+
+        .quiz-gate-overlay.open { display: flex; }
+
+        .quiz-gate-modal {
+            width: min(480px, 100%);
+            border: 1px solid rgba(255, 107, 125, 0.28);
+            border-radius: 18px;
+            background: rgba(10, 14, 27, 0.98);
+            padding: 18px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .quiz-gate-modal h3 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .quiz-gate-modal p {
+            margin: 0 0 12px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .quiz-gate-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .quiz-gate-btn {
+            border: 0;
+            border-radius: 999px;
+            text-decoration: none;
+            padding: 11px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .quiz-gate-btn.primary {
+            color: #fff4f6;
+            background: linear-gradient(135deg, #ff6b7d, #ff9f68);
+        }
+
+        .quiz-gate-btn.ghost {
+            color: #dce9ff;
+            background: rgba(12, 18, 34, 0.84);
+            border: 1px solid var(--line);
+        }
+
         @media (max-width: 1080px) {
             .content-grid { grid-template-columns: 1fr; }
             .chapter-rail { position: static; max-height: none; }
@@ -377,6 +442,7 @@
 <body>
 @php
     $embedVideoUrl = null;
+    $origin = request()->getSchemeAndHttpHost();
     if (!empty($lesson?->video_url)) {
         $rawUrl = trim($lesson->video_url);
         $embedVideoUrl = $rawUrl;
@@ -385,35 +451,35 @@
             $parts = parse_url($rawUrl);
             parse_str($parts['query'] ?? '', $query);
             if (!empty($query['v'])) {
-                $embedVideoUrl = 'https://www.youtube.com/embed/'.$query['v'];
+                $embedVideoUrl = 'https://www.youtube.com/embed/'.$query['v'].'?enablejsapi=1&rel=0&playsinline=1&origin='.urlencode($origin);
             }
         } elseif (str_contains($rawUrl, 'youtu.be/')) {
             $path = trim((string) parse_url($rawUrl, PHP_URL_PATH), '/');
             $videoId = explode('/', $path)[0] ?? '';
             if ($videoId !== '') {
-                $embedVideoUrl = 'https://www.youtube.com/embed/'.$videoId;
+                $embedVideoUrl = 'https://www.youtube.com/embed/'.$videoId.'?enablejsapi=1&rel=0&playsinline=1&origin='.urlencode($origin);
             }
         } elseif (str_contains($rawUrl, 'youtube.com/shorts/')) {
             $path = trim((string) parse_url($rawUrl, PHP_URL_PATH), '/');
             $videoId = explode('/', str_replace('shorts/', '', $path))[0] ?? '';
             if ($videoId !== '') {
-                $embedVideoUrl = 'https://www.youtube.com/embed/'.$videoId;
+                $embedVideoUrl = 'https://www.youtube.com/embed/'.$videoId.'?enablejsapi=1&rel=0&playsinline=1&origin='.urlencode($origin);
             }
         }
     }
 
     $estimatedHours = $course->duration_text ?: ($chaptersCount.' chapters');
+    $hasCurrentVideo = (bool) ($lesson && ($lesson->video_path || $lesson->video_url));
 @endphp
 <header class="topbar">
     <div class="topbar-inner">
         <div class="brand-wrap">
             <strong>{{ $course->title }} - Chapter {{ $chapter }}</strong>
-            <span>Learning mode � {{ $videoReadyCount }}/{{ $chaptersCount }} chapters with video</span>
+            <span>Learning mode • {{ $videoReadyCount }}/{{ $chaptersCount }} chapters with video</span>
         </div>
         <div class="top-actions">
             <a class="chip" href="{{ $roadmapUrl }}">Back To Roadmap</a>
             <a class="chip" href="{{ $dashboardUrl }}">Dashboard</a>
-            <button class="chip chip-primary" type="button" id="markCompleteBtn">Mark Complete</button>
         </div>
     </div>
 </header>
@@ -445,7 +511,7 @@
                             <source src="{{ asset('storage/' . $lesson->video_path) }}" type="video/mp4">
                         </video>
                     @elseif($lesson && $lesson->video_url)
-                        <iframe src="{{ $embedVideoUrl }}" allowfullscreen loading="lazy"></iframe>
+                        <iframe id="lessonYoutubePlayer" src="{{ $embedVideoUrl }}" allowfullscreen loading="lazy"></iframe>
                     @else
                         <div class="placeholder">Video chapter belum diunggah. Silakan lanjut ke chapter lain atau tunggu update mentor.</div>
                     @endif
@@ -462,7 +528,7 @@
                         @endif
                     </div>
                     <div class="right-actions">
-                        <span class="badge" id="completionBadge">Not completed</span>
+                        <span class="badge" id="completionBadge">{{ !empty($isCurrentChapterCompleted) ? 'Completed' : ($hasCurrentVideo ? 'Watching' : 'Ready to unlock next') }}</span>
                     </div>
                 </div>
 
@@ -473,6 +539,13 @@
                 <div class="callout">
                     <h3>Schedule Learning Time</h3>
                     <p class="muted">Belajar konsisten lebih efektif daripada maraton. Sisihkan 30-45 menit per hari untuk progress stabil.</p>
+                    <p class="muted" style="margin-top:8px;" id="attendanceProgressLabel">
+                        @if(!empty($attendance['enabled']))
+                            Consistent mode aktif: {{ (int)($attendance['today_completed'] ?? 0) }}/{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }} chapter hari ini {{ !empty($attendance['today_attended']) ? '- attendance sudah tercatat.' : '- attendance belum tercatat.' }}
+                        @else
+                            Consistent mode belum aktif. Aktifkan dari roadmap page untuk mulai hitung kehadiran.
+                        @endif
+                    </p>
                 </div>
             </section>
 
@@ -526,19 +599,41 @@
             <p class="muted" style="margin:6px 0 0;">Progress <span id="progressText">0/{{ $chaptersCount }}</span> chapters completed</p>
             <div class="chapter-list">
                 @foreach($chapterItems as $item)
-                    <a class="chapter-item {{ $item['number'] === $chapter ? 'active' : '' }}" href="{{ $item['href'] }}" data-chapter-number="{{ $item['number'] }}">
+                    <a class="chapter-item {{ $item['number'] === $chapter ? 'active' : '' }} {{ !empty($item['is_completed']) ? 'completed' : '' }} {{ !empty($item['is_locked']) ? 'locked' : '' }}" href="{{ $item['href'] ?? '#' }}" data-chapter-number="{{ $item['number'] }}" data-locked="{{ !empty($item['is_locked']) ? 'true' : 'false' }}">
                         <div class="status-row">
                             <strong>Chapter {{ str_pad((string) $item['number'], 2, '0', STR_PAD_LEFT) }}</strong>
                             <span class="badge">{{ $item['has_video'] ? 'Video' : 'No Video' }}</span>
                         </div>
                         <span>{{ $item['title'] }}</span>
-                        <small class="chapter-complete-text">Not completed</small>
+                        <small class="chapter-complete-text">
+                            @if(!empty($item['is_completed']))
+                                Completed
+                            @elseif(!empty($item['is_locked']))
+                                Locked
+                            @else
+                                In progress
+                            @endif
+                        </small>
                     </a>
                 @endforeach
             </div>
         </aside>
     </div>
 </div>
+
+@if(!empty($pendingPopQuizPrompt))
+    <div class="quiz-gate-overlay {{ request()->has('quiz_gate') ? 'open' : '' }}" id="quizGateOverlay">
+        <div class="quiz-gate-modal">
+            <h3>Pop Quiz Unlocked</h3>
+            <p>Kamu baru membuka pop quiz setelah Chapter {{ $pendingPopQuizPrompt['placement_after_chapter'] }}. Sebelum lanjut ke chapter berikutnya, kamu harus menjawab {{ $pendingPopQuizPrompt['question_count'] }} soal ini dengan benar.</p>
+            <div class="quiz-gate-actions">
+                <a class="quiz-gate-btn primary" href="{{ $pendingPopQuizPrompt['take_quiz_url'] }}">Do Quiz Now</a>
+                <a class="quiz-gate-btn ghost" href="{{ $dashboardUrl }}">Back To Dashboard</a>
+                <a class="quiz-gate-btn ghost" href="{{ $roadmapUrl }}">Back To Roadmap</a>
+            </div>
+        </div>
+    </div>
+@endif
 
 <script>
     const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
@@ -560,58 +655,137 @@
     });
 
     const currentChapter = {{ (int) $chapter }};
-    const completedKey = @json($progressStorageKey);
     const notesKey = @json($notesStorageKey);
+    const completionUrl = @json($completionUrl);
+    const roadmapUrl = @json($roadmapUrl);
+    const chapterNextUrl = @json($chapterNextUrl);
+    const hasCurrentVideo = {{ $hasCurrentVideo ? 'true' : 'false' }};
+    let currentCompleted = {{ !empty($isCurrentChapterCompleted) ? 'true' : 'false' }};
+    let navigatingChapter = false;
 
     const completionBadge = document.getElementById('completionBadge');
-    const markCompleteBtn = document.getElementById('markCompleteBtn');
     const progressText = document.getElementById('progressText');
     const chapterLinks = Array.from(document.querySelectorAll('.chapter-item'));
     const notesField = document.getElementById('notesField');
+    const videoElement = document.querySelector('video');
+    const iframeElement = document.querySelector('iframe');
+    const quizGateOverlay = document.getElementById('quizGateOverlay');
+    let youtubeFallbackTimer = null;
 
-    function getCompletedSet() {
-        try {
-            const raw = localStorage.getItem(completedKey);
-            const parsed = raw ? JSON.parse(raw) : [];
-            return new Set(Array.isArray(parsed) ? parsed.map(Number) : []);
-        } catch (error) {
-            return new Set();
+    function updateProgressSummary() {
+        const completedItems = chapterLinks.filter((link) => link.classList.contains('completed'));
+        progressText.textContent = `${completedItems.length}/{{ $chaptersCount }}`;
+    }
+
+    function markChapterCompletedUi(chapterNumber) {
+        const link = chapterLinks.find((item) => Number(item.dataset.chapterNumber) === Number(chapterNumber));
+        if (!link) {
+            return;
+        }
+
+        link.classList.remove('locked');
+        link.classList.add('completed');
+        link.dataset.locked = 'false';
+        const text = link.querySelector('.chapter-complete-text');
+        if (text) {
+            text.textContent = 'Completed';
         }
     }
 
-    function saveCompletedSet(set) {
-        localStorage.setItem(completedKey, JSON.stringify(Array.from(set)));
+    function unlockNextChapterUi(chapterNumber) {
+        const link = chapterLinks.find((item) => Number(item.dataset.chapterNumber) === Number(chapterNumber));
+        if (!link) {
+            return;
+        }
+
+        link.classList.remove('locked');
+        link.dataset.locked = 'false';
+        const text = link.querySelector('.chapter-complete-text');
+        if (text && text.textContent.trim() === 'Locked') {
+            text.textContent = 'In progress';
+        }
     }
 
-    function renderCompletionUI() {
-        const set = getCompletedSet();
-        const isDone = set.has(currentChapter);
+    function navigateChapterCompletion() {
+        if (navigatingChapter || currentCompleted) {
+            return;
+        }
 
-        completionBadge.textContent = isDone ? 'Completed' : 'Not completed';
-        markCompleteBtn.textContent = isDone ? 'Mark Incomplete' : 'Mark Complete';
+        navigatingChapter = true;
+        completionBadge.textContent = 'Opening next chapter...';
+        window.location.href = completionUrl;
+    }
 
-        chapterLinks.forEach((link) => {
-            const chapterNo = Number(link.dataset.chapterNumber);
-            const isChapterDone = set.has(chapterNo);
-            const text = link.querySelector('.chapter-complete-text');
-            if (text) {
-                text.textContent = isChapterDone ? 'Completed' : 'Not completed';
+    function bootYoutubeAdvance() {
+        if (!iframeElement) {
+            return;
+        }
+
+        const createPlayer = () => {
+            if (!window.YT || !window.YT.Player) {
+                return;
             }
-        });
 
-        progressText.textContent = `${set.size}/{{ $chaptersCount }}`;
-    }
+            const player = new YT.Player('lessonYoutubePlayer', {
+                events: {
+                    onStateChange(event) {
+                        if (event.data === YT.PlayerState.ENDED) {
+                            navigateChapterCompletion();
+                            return;
+                        }
 
-    markCompleteBtn?.addEventListener('click', () => {
-        const set = getCompletedSet();
-        if (set.has(currentChapter)) {
-            set.delete(currentChapter);
-        } else {
-            set.add(currentChapter);
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            if (youtubeFallbackTimer) {
+                                clearInterval(youtubeFallbackTimer);
+                            }
+
+                            youtubeFallbackTimer = setInterval(() => {
+                                try {
+                                    const duration = player.getDuration();
+                                    const current = player.getCurrentTime();
+
+                                    if (duration > 0 && current >= Math.max(0, duration - 1.25)) {
+                                        clearInterval(youtubeFallbackTimer);
+                                        youtubeFallbackTimer = null;
+                                        navigateChapterCompletion();
+                                    }
+                                } catch (error) {
+                                    // keep polling light and silent
+                                }
+                            }, 1000);
+                        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.BUFFERING) {
+                            if (youtubeFallbackTimer) {
+                                clearInterval(youtubeFallbackTimer);
+                                youtubeFallbackTimer = null;
+                            }
+                        }
+                    }
+                }
+            });
+
+            window.skillifyLessonPlayer = player;
+        };
+
+        if (window.YT && window.YT.Player) {
+            createPlayer();
+            return;
         }
-        saveCompletedSet(set);
-        renderCompletionUI();
-    });
+
+        const previousReady = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = function () {
+            if (typeof previousReady === 'function') {
+                previousReady();
+            }
+            createPlayer();
+        };
+
+        if (!document.querySelector('script[data-skillify-youtube-api="true"]')) {
+            const youtubeApiScript = document.createElement('script');
+            youtubeApiScript.src = 'https://www.youtube.com/iframe_api';
+            youtubeApiScript.dataset.skillifyYoutubeApi = 'true';
+            document.head.appendChild(youtubeApiScript);
+        }
+    }
 
     if (notesField) {
         notesField.value = localStorage.getItem(notesKey) || '';
@@ -620,8 +794,20 @@
         });
     }
 
-    renderCompletionUI();
+    if (videoElement) {
+        videoElement.addEventListener('ended', () => navigateChapterCompletion(), { once: true });
+    }
+
+    if (iframeElement && iframeElement.src.includes('youtube.com/embed/')) {
+        bootYoutubeAdvance();
+    }
+
+    if (quizGateOverlay && quizGateOverlay.classList.contains('open')) {
+        document.body.style.overflow = 'hidden';
+    }
+
+    updateProgressSummary();
 </script>
+@include('partials.student-chatbot')
 </body>
 </html>
-

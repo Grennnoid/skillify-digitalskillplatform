@@ -573,28 +573,8 @@
     <header class="nav">
         <div class="brand">Skillify<span></span></div>
         <nav class="menu">
-            <div class="courses-menu" id="coursesMenu">
-                <button class="courses-trigger" id="coursesTrigger" type="button" aria-expanded="false">Courses</button>
-                <div class="courses-dropdown">
-                    @forelse(($carouselCourses ?? []) as $course)
-                        <a class="courses-item" href="{{ $course['href'] }}">{{ $course['title'] }}</a>
-                    @empty
-                        <div class="courses-empty">Belum ada course.</div>
-                    @endforelse
-                </div>
-            </div>
-            <div class="mentors-menu" id="mentorsMenu">
-                <button class="mentors-trigger" id="mentorsTrigger" type="button" aria-expanded="false">Mentors</button>
-                <div class="mentors-dropdown">
-                    @forelse(($mentors ?? []) as $mentor)
-                        <a class="mentor-item" href="{{ route('mentors.show', ['mentor' => $mentor->id]) }}">
-                            {{ $mentor->name }} ({{ $mentor->courses_count }})
-                        </a>
-                    @empty
-                        <div class="mentor-empty">Belum ada mentor dengan course.</div>
-                    @endforelse
-                </div>
-            </div>
+            <a href="{{ route('student.courses') }}">Courses</a>
+            <a href="{{ route('student.mentors') }}">Mentors</a>
             <div class="progress-menu" id="progressMenu">
                 <button class="progress-trigger" id="progressTrigger" type="button" aria-expanded="false">Progress</button>
                 <div class="progress-dropdown">
@@ -774,21 +754,38 @@
     const profileTrigger = document.getElementById('profileTriggerStudent');
     const myCoursesMenu = document.getElementById('myCoursesMenu');
     const myCoursesTrigger = document.getElementById('myCoursesTrigger');
-    const mentorsMenu = document.getElementById('mentorsMenu');
-    const mentorsTrigger = document.getElementById('mentorsTrigger');
-    const coursesMenu = document.getElementById('coursesMenu');
-    const coursesTrigger = document.getElementById('coursesTrigger');
     const progressMenu = document.getElementById('progressMenu');
     const progressTrigger = document.getElementById('progressTrigger');
     const homeMenu = document.getElementById('homeMenu');
     const homeTrigger = document.getElementById('homeTrigger');
 
+    const dropdownMenus = [
+        { menu: myCoursesMenu, trigger: myCoursesTrigger },
+        { menu: progressMenu, trigger: progressTrigger },
+        { menu: homeMenu, trigger: homeTrigger },
+        { menu: profileMenu, trigger: profileTrigger },
+    ];
+
+    function closeAllMenus(exceptMenu = null) {
+        dropdownMenus.forEach(({ menu, trigger }) => {
+            if (!menu || !trigger || menu === exceptMenu) {
+                return;
+            }
+            menu.classList.remove('open');
+            trigger.setAttribute('aria-expanded', 'false');
+        });
+    }
+
     if (profileMenu && profileTrigger) {
         profileTrigger.addEventListener('click', function (event) {
             if (!profileMenu.classList.contains('open')) {
                 event.preventDefault();
+                closeAllMenus(profileMenu);
                 profileMenu.classList.add('open');
                 profileTrigger.setAttribute('aria-expanded', 'true');
+            } else {
+                profileMenu.classList.remove('open');
+                profileTrigger.setAttribute('aria-expanded', 'false');
             }
         });
 
@@ -803,8 +800,10 @@
     if (myCoursesMenu && myCoursesTrigger) {
         myCoursesTrigger.addEventListener('click', function (event) {
             event.stopPropagation();
-            myCoursesMenu.classList.toggle('open');
-            myCoursesTrigger.setAttribute('aria-expanded', String(myCoursesMenu.classList.contains('open')));
+            const willOpen = !myCoursesMenu.classList.contains('open');
+            closeAllMenus(willOpen ? myCoursesMenu : null);
+            myCoursesMenu.classList.toggle('open', willOpen);
+            myCoursesTrigger.setAttribute('aria-expanded', String(willOpen));
         });
 
         document.addEventListener('click', function (event) {
@@ -815,41 +814,13 @@
         });
     }
 
-    if (mentorsMenu && mentorsTrigger) {
-        mentorsTrigger.addEventListener('click', function (event) {
-            event.stopPropagation();
-            mentorsMenu.classList.toggle('open');
-            mentorsTrigger.setAttribute('aria-expanded', String(mentorsMenu.classList.contains('open')));
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!mentorsMenu.contains(event.target)) {
-                mentorsMenu.classList.remove('open');
-                mentorsTrigger.setAttribute('aria-expanded', 'false');
-            }
-        });
-    }
-
-    if (coursesMenu && coursesTrigger) {
-        coursesTrigger.addEventListener('click', function (event) {
-            event.stopPropagation();
-            coursesMenu.classList.toggle('open');
-            coursesTrigger.setAttribute('aria-expanded', String(coursesMenu.classList.contains('open')));
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!coursesMenu.contains(event.target)) {
-                coursesMenu.classList.remove('open');
-                coursesTrigger.setAttribute('aria-expanded', 'false');
-            }
-        });
-    }
-
     if (progressMenu && progressTrigger) {
         progressTrigger.addEventListener('click', function (event) {
             event.stopPropagation();
-            progressMenu.classList.toggle('open');
-            progressTrigger.setAttribute('aria-expanded', String(progressMenu.classList.contains('open')));
+            const willOpen = !progressMenu.classList.contains('open');
+            closeAllMenus(willOpen ? progressMenu : null);
+            progressMenu.classList.toggle('open', willOpen);
+            progressTrigger.setAttribute('aria-expanded', String(willOpen));
         });
 
         document.addEventListener('click', function (event) {
@@ -863,8 +834,10 @@
     if (homeMenu && homeTrigger) {
         homeTrigger.addEventListener('click', function (event) {
             event.stopPropagation();
-            homeMenu.classList.toggle('open');
-            homeTrigger.setAttribute('aria-expanded', String(homeMenu.classList.contains('open')));
+            const willOpen = !homeMenu.classList.contains('open');
+            closeAllMenus(willOpen ? homeMenu : null);
+            homeMenu.classList.toggle('open', willOpen);
+            homeTrigger.setAttribute('aria-expanded', String(willOpen));
         });
 
         document.addEventListener('click', function (event) {
@@ -877,6 +850,7 @@
 
     setActiveCard();
 </script>
+@include('partials.student-chatbot')
 </body>
 </html>
 

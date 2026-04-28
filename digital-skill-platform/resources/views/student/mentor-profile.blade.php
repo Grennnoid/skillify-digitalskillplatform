@@ -215,5 +215,6 @@
     </section>
 </div>
 </div>
+@include('partials.student-chatbot')
 </body>
 </html>

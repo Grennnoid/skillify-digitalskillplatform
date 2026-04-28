@@ -2,173 +2,389 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AiQuestionGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DosenDashboardController extends Controller
 {
-    public function dashboard()
+    private const DASHBOARD_CACHE_TTL_SECONDS = 120;
+    private const AI_PREVIEW_SESSION_KEY = 'dosen_ai_question_preview';
+
+    private function dashboardCacheKey(int $dosenId): string
     {
-        $dosenId = auth()->id();
+        return 'dashboard:dosen:'.$dosenId.':data';
+    }
 
-        $stats = [
-            'courses' => DB::table('quizzes')->where('created_by', $dosenId)->count(),
-            'questions' => DB::table('question_bank')->where('created_by', $dosenId)->count(),
-            'submissions' => DB::table('quiz_submissions as s')
-                ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
-                ->where('q.created_by', $dosenId)
-                ->count(),
-        ];
+    private function buildSyllabusLines(?string $syllabusJson): string
+    {
+        if (empty($syllabusJson)) {
+            return '';
+        }
 
-        $avgScore = DB::table('quiz_submissions as s')
-            ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
-            ->where('q.created_by', $dosenId)
-            ->selectRaw('AVG(COALESCE(s.manual_score, s.score)) as avg_score')
-            ->first();
+        $rows = json_decode($syllabusJson, true);
+        if (!is_array($rows)) {
+            return '';
+        }
 
-        $courses = DB::table('quizzes')
-            ->where('created_by', $dosenId)
-            ->latest()
-            ->limit(10)
-            ->get();
+        return collect($rows)
+            ->map(fn ($row) => trim(($row['title'] ?? '').'|'.($row['description'] ?? '')))
+            ->filter()
+            ->implode("\n");
+    }
 
-        $courseInfosByQuizId = DB::table('quiz_course_infos')
-            ->whereIn('quiz_id', $courses->pluck('id'))
-            ->get()
-            ->keyBy('quiz_id');
+    private function forgetDashboardCaches(?int $dosenId = null): void
+    {
+        if ($dosenId !== null) {
+            Cache::forget($this->dashboardCacheKey($dosenId));
+            return;
+        }
 
-        $courseInfoData = [];
-        foreach ($courses as $course) {
-            $info = $courseInfosByQuizId->get($course->id);
-            $syllabusLines = '';
+        Cache::forget($this->dashboardCacheKey(auth()->id()));
+    }
 
-            if (!empty($info?->syllabus_json)) {
-                $rows = json_decode($info->syllabus_json, true);
-                if (is_array($rows)) {
-                    $syllabusLines = collect($rows)
-                        ->map(fn ($row) => trim(($row['title'] ?? '').'|'.($row['description'] ?? '')))
-                        ->filter()
-                        ->implode("\n");
-                }
-            }
+    private function forgetCourseCaches(?int $quizId = null, ?string $slug = null): void
+    {
+        $this->forgetDashboardCaches();
+        Cache::forget('landing:courses');
+        Cache::forget('landing:stats');
+        Cache::forget('student_course:carousel_courses:all');
+        Cache::forget('student_course:mentors:all');
 
-            $courseInfoData[$course->id] = [
-                'mode' => 'quiz',
-                'hero_title' => $info->hero_title ?? '',
-                'hero_background_url' => $info->hero_background_url ?? '',
-                'tagline' => $info->tagline ?? '',
-                'instructor_name' => $info->instructor_name ?? '',
-                'instructor_photo_url' => $info->instructor_photo_url ?? '',
-                'about' => $info->about ?? '',
-                'target_audience' => $info->target_audience ?? '',
-                'duration_text' => $info->duration_text ?? '',
-                'syllabus_lines' => $syllabusLines,
-                'learning_outcomes' => $info->learning_outcomes ?? '',
-                'trailer_url' => $info->trailer_url ?? '',
-                'trailer_poster_url' => $info->trailer_poster_url ?? '',
+        if ($quizId !== null) {
+            Cache::forget('student_course:quiz_record:'.$quizId);
+            Cache::forget('student_course:quiz_course_info:'.$quizId);
+        }
+
+        if ($slug !== null) {
+            Cache::forget('student_course:course_lessons:'.$slug);
+            Cache::forget('student_course:course_page_content:'.$slug);
+        }
+    }
+
+    private function courseContextFromKey(string $courseKey): array
+    {
+        if ($courseKey === 'frontend-craft') {
+            $content = DB::table('course_page_contents')
+                ->where('course_slug', 'frontend-craft')
+                ->where('updated_by', auth()->id())
+                ->first(['hero_title']);
+
+            abort_if(!$content, 404);
+
+            return [
+                'course_key' => 'frontend-craft',
+                'course_slug' => 'frontend-craft',
+                'quiz_id' => null,
+                'course_title' => $content->hero_title ?? 'Frontend Craft',
+                'course_category' => 'Web Development',
+                'chapter_count' => max(
+                    8,
+                    (int) (DB::table('course_lessons')->where('course_slug', 'frontend-craft')->max('chapter_number') ?? 0)
+                ),
             ];
         }
 
-        $courseInfoRows = DB::table('quiz_course_infos as i')
-            ->join('quizzes as q', 'q.id', '=', 'i.quiz_id')
-            ->where('q.created_by', $dosenId)
-            ->select('i.quiz_id', 'q.title', 'i.tagline', 'i.target_audience', 'i.updated_at')
-            ->orderByDesc('i.updated_at')
-            ->limit(10)
-            ->get();
+        $quiz = DB::table('quizzes')
+            ->where('id', (int) $courseKey)
+            ->where('created_by', auth()->id())
+            ->first(['id', 'title', 'category']);
 
-        $submissions = DB::table('quiz_submissions as s')
-            ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
-            ->leftJoin('users as u', 'u.id', '=', 's.user_id')
-            ->where('q.created_by', $dosenId)
-            ->select(
-                's.id',
-                'q.title as course_title',
-                'u.name as student_name',
-                's.score',
-                's.manual_score',
-                's.status',
-                's.submitted_at'
-            )
-            ->orderByDesc('s.submitted_at')
-            ->limit(12)
-            ->get();
+        abort_if(!$quiz, 404);
 
-        $analytics = DB::table('quiz_submissions as s')
-            ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
-            ->where('q.created_by', $dosenId)
-            ->select('q.category', DB::raw('COUNT(*) as total'))
-            ->groupBy('q.category')
-            ->orderByDesc('total')
-            ->limit(6)
-            ->get();
-
-        $qaInbox = DB::table('course_questions as cq')
-            ->leftJoin('users as u', 'u.id', '=', 'cq.user_id')
-            ->where('cq.dosen_id', $dosenId)
-            ->select(
-                'cq.id',
-                'cq.course_title',
-                'cq.course_slug',
-                'cq.chapter_number',
-                'cq.question_text',
-                'cq.answer_text',
-                'cq.created_at',
-                'u.name as student_name'
-            )
-            ->orderByDesc('cq.created_at')
-            ->limit(40)
-            ->get();
-
-        $frontendCraftContent = DB::table('course_page_contents')->where('course_slug', 'frontend-craft')->first();
-        $frontendCraftSyllabusText = '';
-        if (!empty($frontendCraftContent?->syllabus_json)) {
-            $rows = json_decode($frontendCraftContent->syllabus_json, true);
-            if (is_array($rows)) {
-                $frontendCraftSyllabusText = collect($rows)
-                    ->map(fn ($row) => trim(($row['title'] ?? '').'|'.($row['description'] ?? '')))
-                    ->filter()
-                    ->implode("\n");
-            }
-        }
-
-        $frontendCraftFallbackSyllabus = [
-            ['title' => 'Module 1: Frontend Fundamentals', 'description' => 'Setup lingkungan kerja, HTML semantic, CSS modern basics, dan mindset frontend developer.'],
-            ['title' => 'Module 2: Layout & Responsive Design', 'description' => 'Flexbox, CSS Grid, responsive breakpoints, serta mobile-first strategy untuk UI yang rapi.'],
-            ['title' => 'Module 3: JavaScript Interactivity', 'description' => 'DOM manipulation, event handling, state sederhana, dan best practice UI interaction.'],
-            ['title' => 'Module 4: Project Build & Deployment', 'description' => 'Bangun project portfolio nyata dan deploy ke hosting agar bisa dipamerkan ke recruiter/client.'],
+        return [
+            'course_key' => (string) $quiz->id,
+            'course_slug' => 'quiz-'.$quiz->id,
+            'quiz_id' => (int) $quiz->id,
+            'course_title' => $quiz->title,
+            'course_category' => $quiz->category,
+            'chapter_count' => max(
+                8,
+                (int) (DB::table('course_lessons')->where('course_slug', 'quiz-'.$quiz->id)->max('chapter_number') ?? 0)
+            ),
         ];
-        $frontendCraftFallbackSyllabusText = collect($frontendCraftFallbackSyllabus)
-            ->map(fn ($row) => $row['title'].'|'.$row['description'])
-            ->implode("\n");
-        $frontendCraftFallbackOutcomes = implode("\n", [
-            'Kamu akan bisa membuat landing page dan dashboard frontend sendiri.',
-            'Kamu memahami cara membangun UI yang responsive dan reusable.',
-            'Kamu mampu mengubah design menjadi implementasi web yang rapi.',
-            'Kamu punya 1 project portfolio frontend siap publish.',
+    }
+
+    private function validateAiQuestionRequest(Request $request): array
+    {
+        $validated = $request->validate([
+            'course_key' => ['required', 'string', 'max:120'],
+            'generation_notes' => ['required', 'string', 'max:4000'],
+            'difficulty' => ['required', 'in:beginner,intermediate,advanced'],
+            'question_count' => ['required', 'integer', 'min:1', 'max:10'],
+            'question_type_mode' => ['required', 'in:mcq,essay,true_false,mixed_mcq_essay,mixed_all'],
+            'placement_after_chapter' => ['nullable', 'integer', 'min:1', 'max:40'],
+            'is_pop_quiz' => ['nullable', 'boolean'],
         ]);
 
-        $courseInfoData['frontend-craft'] = [
-            'mode' => 'frontend-craft',
-            'hero_title' => $frontendCraftContent->hero_title ?? 'Frontend Craft',
-            'hero_background_url' => $frontendCraftContent->hero_background_url ?? '',
-            'tagline' => $frontendCraftContent->tagline ?? 'Kuasai seni web development modern dalam 30 hari.',
-            'instructor_name' => $frontendCraftContent->instructor_name ?? 'Raka Pradana',
-            'instructor_photo_url' => $frontendCraftContent->instructor_photo_url ?? 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1400&q=80',
-            'about' => $frontendCraftContent->about ?? 'Course ini dirancang untuk membantu kamu yang bingung memulai web development. Setelah menyelesaikan materi, kamu akan mampu membangun website interaktif, responsive, dan siap deploy dengan workflow profesional.',
-            'target_audience' => $frontendCraftContent->target_audience ?? 'Pemula sampai Intermediate',
-            'duration_text' => $frontendCraftContent->duration_text ?? 'Total Durasi: 18 Jam Video - 42 Materi',
-            'syllabus_lines' => $frontendCraftSyllabusText !== '' ? $frontendCraftSyllabusText : $frontendCraftFallbackSyllabusText,
-            'learning_outcomes' => $frontendCraftContent->outcomes_text ?? $frontendCraftFallbackOutcomes,
-            'trailer_url' => $frontendCraftContent->trailer_url ?? 'https://cdn.coverr.co/videos/coverr-programming-workflow-1579/1080p.mp4',
-            'trailer_poster_url' => $frontendCraftContent->trailer_poster_url ?? 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1400&q=80',
-        ];
+        $context = $this->courseContextFromKey($validated['course_key']);
+        if (!empty($validated['placement_after_chapter']) && $validated['placement_after_chapter'] > $context['chapter_count']) {
+            throw ValidationException::withMessages([
+                'placement_after_chapter' => 'Posisi chapter melebihi jumlah chapter course.',
+            ]);
+        }
 
-        $canManageFrontendCraft = (($frontendCraftContent->updated_by ?? null) === $dosenId);
+        return array_merge($validated, $context, [
+            'is_pop_quiz' => (bool) ($validated['is_pop_quiz'] ?? false),
+        ]);
+    }
+
+    private function insertGeneratedQuestions(array $preview): int
+    {
+        $rows = [];
+        foreach ($preview['questions'] as $question) {
+            $rows[] = [
+                'quiz_id' => $preview['quiz_id'],
+                'course_slug' => $preview['course_slug'],
+                'question_text' => $question['question_text'],
+                'question_type' => $question['question_type'],
+                'category' => $preview['course_category'],
+                'difficulty' => $question['difficulty'],
+                'correct_answer' => $question['correct_answer'] !== '' ? $question['correct_answer'] : null,
+                'options_json' => $question['options_json'],
+                'placement_after_chapter' => $preview['placement_after_chapter'] ?: null,
+                'is_pop_quiz' => (bool) $preview['is_pop_quiz'],
+                'requires_perfect_score' => (bool) $preview['is_pop_quiz'],
+                'question_origin' => 'ai',
+                'generation_notes' => $preview['generation_notes'],
+                'created_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        DB::table('question_bank')->insert($rows);
+
+        if (!empty($preview['usage'])) {
+            DB::table('ai_usage_logs')->insert([
+                'provider' => $preview['usage']['provider'],
+                'model' => $preview['usage']['model'],
+                'token_count' => (int) ($preview['usage']['token_count'] ?? 0),
+                'cost_usd' => 0,
+                'logged_at' => now(),
+                'created_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return count($rows);
+    }
+
+    public function dashboard()
+    {
+        $dosenId = auth()->id();
+        $dashboardData = Cache::remember($this->dashboardCacheKey($dosenId), self::DASHBOARD_CACHE_TTL_SECONDS, function () use ($dosenId) {
+            $stats = [
+                'courses' => (int) DB::table('quizzes')->where('created_by', $dosenId)->count(),
+                'questions' => (int) DB::table('question_bank')->where('created_by', $dosenId)->count(),
+                'submissions' => (int) DB::table('quiz_submissions as s')
+                    ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
+                    ->where('q.created_by', $dosenId)
+                    ->count(),
+            ];
+
+            $avgScore = DB::table('quiz_submissions as s')
+                ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
+                ->where('q.created_by', $dosenId)
+                ->selectRaw('AVG(COALESCE(s.manual_score, s.score)) as avg_score')
+                ->first();
+
+            $courses = DB::table('quizzes')
+                ->where('created_by', $dosenId)
+                ->latest()
+                ->limit(10)
+                ->get();
+
+            $courseInfosByQuizId = DB::table('quiz_course_infos')
+                ->whereIn('quiz_id', $courses->pluck('id'))
+                ->get()
+                ->keyBy('quiz_id');
+
+            $courseInfoData = [];
+            foreach ($courses as $course) {
+                $info = $courseInfosByQuizId->get($course->id);
+
+                $courseInfoData[$course->id] = [
+                    'mode' => 'quiz',
+                    'hero_title' => $info->hero_title ?? '',
+                    'hero_background_url' => $info->hero_background_url ?? '',
+                    'tagline' => $info->tagline ?? '',
+                    'instructor_name' => $info->instructor_name ?? '',
+                    'instructor_photo_url' => $info->instructor_photo_url ?? '',
+                    'about' => $info->about ?? '',
+                    'target_audience' => $info->target_audience ?? '',
+                    'duration_text' => $info->duration_text ?? '',
+                    'syllabus_lines' => $this->buildSyllabusLines($info->syllabus_json ?? null),
+                    'learning_outcomes' => $info->learning_outcomes ?? '',
+                    'trailer_url' => $info->trailer_url ?? '',
+                    'trailer_poster_url' => $info->trailer_poster_url ?? '',
+                ];
+            }
+
+            $courseInfoRows = DB::table('quiz_course_infos as i')
+                ->join('quizzes as q', 'q.id', '=', 'i.quiz_id')
+                ->where('q.created_by', $dosenId)
+                ->select('i.quiz_id', 'q.title', 'i.tagline', 'i.target_audience', 'i.updated_at')
+                ->orderByDesc('i.updated_at')
+                ->limit(10)
+                ->get();
+
+            $submissions = DB::table('quiz_submissions as s')
+                ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
+                ->leftJoin('users as u', 'u.id', '=', 's.user_id')
+                ->where('q.created_by', $dosenId)
+                ->select(
+                    's.id',
+                    'q.title as course_title',
+                    'u.name as student_name',
+                    's.score',
+                    's.manual_score',
+                    's.status',
+                    's.submitted_at'
+                )
+                ->orderByDesc('s.submitted_at')
+                ->limit(12)
+                ->get();
+
+            $questionBankRows = DB::table('question_bank as qb')
+                ->leftJoin('quizzes as q', 'q.id', '=', 'qb.quiz_id')
+                ->where('qb.created_by', $dosenId)
+                ->select(
+                    'qb.id',
+                    'qb.question_text',
+                    'qb.question_type',
+                    'qb.difficulty',
+                    'qb.question_origin',
+                    'qb.placement_after_chapter',
+                    'qb.is_pop_quiz',
+                    'qb.course_slug',
+                    'q.title as quiz_title',
+                    'qb.created_at'
+                )
+                ->orderByDesc('qb.created_at')
+                ->limit(30)
+                ->get();
+
+            $analytics = DB::table('quiz_submissions as s')
+                ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
+                ->where('q.created_by', $dosenId)
+                ->select('q.category', DB::raw('COUNT(*) as total'))
+                ->groupBy('q.category')
+                ->orderByDesc('total')
+                ->limit(6)
+                ->get();
+
+            $qaInbox = DB::table('course_questions as cq')
+                ->leftJoin('users as u', 'u.id', '=', 'cq.user_id')
+                ->where('cq.dosen_id', $dosenId)
+                ->select(
+                    'cq.id',
+                    'cq.course_title',
+                    'cq.course_slug',
+                    'cq.chapter_number',
+                    'cq.question_text',
+                    'cq.answer_text',
+                    'cq.created_at',
+                    'u.name as student_name'
+                )
+                ->orderByDesc('cq.created_at')
+                ->limit(40)
+                ->get();
+
+            $attendanceStatsRow = DB::table('course_attendance_logs')
+                ->where('dosen_id', $dosenId)
+                ->selectRaw('COUNT(*) as total_sessions, SUM(CASE WHEN is_attended THEN 1 ELSE 0 END) as attended_sessions')
+                ->first();
+
+            $attendanceStats = [
+                'total_sessions' => (int) ($attendanceStatsRow->total_sessions ?? 0),
+                'attended_sessions' => (int) ($attendanceStatsRow->attended_sessions ?? 0),
+                'students_in_mode' => (int) DB::table('course_attendance_logs')
+                    ->where('dosen_id', $dosenId)
+                    ->distinct('user_id')
+                    ->count('user_id'),
+            ];
+
+            $attendanceRecords = DB::table('course_attendance_logs as a')
+                ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
+                ->where('a.dosen_id', $dosenId)
+                ->select(
+                    'a.course_title',
+                    'a.attendance_date',
+                    'a.target_chapters',
+                    'a.chapters_completed',
+                    'a.is_attended',
+                    'u.name as student_name'
+                )
+                ->orderByDesc('a.attendance_date')
+                ->orderByDesc('a.updated_at')
+                ->limit(18)
+                ->get();
+
+            $frontendCraftContent = DB::table('course_page_contents')->where('course_slug', 'frontend-craft')->first();
+            $frontendCraftSyllabusText = $this->buildSyllabusLines($frontendCraftContent?->syllabus_json);
+
+            $frontendCraftFallbackSyllabus = [
+                ['title' => 'Module 1: Frontend Fundamentals', 'description' => 'Setup lingkungan kerja, HTML semantic, CSS modern basics, dan mindset frontend developer.'],
+                ['title' => 'Module 2: Layout & Responsive Design', 'description' => 'Flexbox, CSS Grid, responsive breakpoints, serta mobile-first strategy untuk UI yang rapi.'],
+                ['title' => 'Module 3: JavaScript Interactivity', 'description' => 'DOM manipulation, event handling, state sederhana, dan best practice UI interaction.'],
+                ['title' => 'Module 4: Project Build & Deployment', 'description' => 'Bangun project portfolio nyata dan deploy ke hosting agar bisa dipamerkan ke recruiter/client.'],
+            ];
+            $frontendCraftFallbackSyllabusText = collect($frontendCraftFallbackSyllabus)
+                ->map(fn ($row) => $row['title'].'|'.$row['description'])
+                ->implode("\n");
+            $frontendCraftFallbackOutcomes = implode("\n", [
+                'Kamu akan bisa membuat landing page dan dashboard frontend sendiri.',
+                'Kamu memahami cara membangun UI yang responsive dan reusable.',
+                'Kamu mampu mengubah design menjadi implementasi web yang rapi.',
+                'Kamu punya 1 project portfolio frontend siap publish.',
+            ]);
+
+            $courseInfoData['frontend-craft'] = [
+                'mode' => 'frontend-craft',
+                'hero_title' => $frontendCraftContent->hero_title ?? 'Frontend Craft',
+                'hero_background_url' => $frontendCraftContent->hero_background_url ?? '',
+                'tagline' => $frontendCraftContent->tagline ?? 'Kuasai seni web development modern dalam 30 hari.',
+                'instructor_name' => $frontendCraftContent->instructor_name ?? 'Raka Pradana',
+                'instructor_photo_url' => $frontendCraftContent->instructor_photo_url ?? 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1400&q=80',
+                'about' => $frontendCraftContent->about ?? 'Course ini dirancang untuk membantu kamu yang bingung memulai web development. Setelah menyelesaikan materi, kamu akan mampu membangun website interaktif, responsive, dan siap deploy dengan workflow profesional.',
+                'target_audience' => $frontendCraftContent->target_audience ?? 'Pemula sampai Intermediate',
+                'duration_text' => $frontendCraftContent->duration_text ?? 'Total Durasi: 18 Jam Video - 42 Materi',
+                'syllabus_lines' => $frontendCraftSyllabusText !== '' ? $frontendCraftSyllabusText : $frontendCraftFallbackSyllabusText,
+                'learning_outcomes' => $frontendCraftContent->outcomes_text ?? $frontendCraftFallbackOutcomes,
+                'trailer_url' => $frontendCraftContent->trailer_url ?? 'https://cdn.coverr.co/videos/coverr-programming-workflow-1579/1080p.mp4',
+                'trailer_poster_url' => $frontendCraftContent->trailer_poster_url ?? 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1400&q=80',
+            ];
+
+            $canManageFrontendCraft = (($frontendCraftContent->updated_by ?? null) === $dosenId);
+
+            return compact(
+                'stats',
+                'avgScore',
+                'courses',
+                'courseInfoRows',
+                'submissions',
+                'questionBankRows',
+                'analytics',
+                'qaInbox',
+                'attendanceStats',
+                'attendanceRecords',
+                'frontendCraftContent',
+                'frontendCraftSyllabusText',
+                'courseInfoData',
+                'canManageFrontendCraft'
+            );
+        });
+
+        extract($dashboardData);
 
         $manageableCourses = $courses->map(fn ($course) => (object) [
                 'key' => (string) $course->id,
@@ -190,7 +406,7 @@ class DosenDashboardController extends Controller
             ]);
         }
 
-        return view('dosen.dashboard', compact('stats', 'avgScore', 'courses', 'submissions', 'analytics', 'qaInbox', 'courseInfoRows', 'frontendCraftContent', 'frontendCraftSyllabusText', 'courseInfoData', 'manageableCourses'));
+        return view('dosen.dashboard', compact('stats', 'avgScore', 'courses', 'submissions', 'questionBankRows', 'analytics', 'qaInbox', 'attendanceStats', 'attendanceRecords', 'courseInfoRows', 'frontendCraftContent', 'frontendCraftSyllabusText', 'courseInfoData', 'manageableCourses'));
     }
 
     public function storeCourse(Request $request): RedirectResponse
@@ -210,36 +426,97 @@ class DosenDashboardController extends Controller
             'updated_at' => now(),
         ]);
 
+        $this->forgetCourseCaches();
+
         return back()->with('success', 'Course berhasil dibuat.');
     }
 
     public function storeQuestion(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'quiz_id' => [
-                'required',
-                Rule::exists('quizzes', 'id')->where(function ($query) {
-                    $query->where('created_by', auth()->id());
-                }),
-            ],
+            'course_key' => ['required', 'string', 'max:120'],
             'question_text' => ['required', 'string'],
             'question_type' => ['required', 'in:mcq,essay,true_false'],
             'difficulty' => ['required', 'in:beginner,intermediate,advanced'],
             'correct_answer' => ['nullable', 'string'],
+            'options_json' => ['nullable', 'string'],
+            'placement_after_chapter' => ['nullable', 'integer', 'min:1', 'max:40'],
+            'is_pop_quiz' => ['nullable', 'boolean'],
         ]);
 
+        $context = $this->courseContextFromKey($validated['course_key']);
+
         DB::table('question_bank')->insert([
-            'quiz_id' => $validated['quiz_id'],
+            'quiz_id' => $context['quiz_id'],
+            'course_slug' => $context['course_slug'],
             'question_text' => $validated['question_text'],
             'question_type' => $validated['question_type'],
             'difficulty' => $validated['difficulty'],
+            'category' => $context['course_category'],
             'correct_answer' => $validated['correct_answer'] ?? null,
+            'options_json' => $validated['options_json'] ?? null,
+            'placement_after_chapter' => $validated['placement_after_chapter'] ?? null,
+            'is_pop_quiz' => (bool) ($validated['is_pop_quiz'] ?? false),
+            'requires_perfect_score' => (bool) ($validated['is_pop_quiz'] ?? false),
+            'question_origin' => 'manual',
             'created_by' => auth()->id(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $this->forgetDashboardCaches();
 
         return back()->with('success', 'Soal berhasil ditambahkan.');
+    }
+
+    public function deleteQuestion(int $question): RedirectResponse
+    {
+        $row = DB::table('question_bank')
+            ->where('id', $question)
+            ->where('created_by', auth()->id())
+            ->first(['id', 'quiz_id', 'course_slug']);
+
+        abort_if(!$row, 404);
+
+        DB::table('question_bank')->where('id', $question)->delete();
+
+        $this->forgetCourseCaches($row->quiz_id ? (int) $row->quiz_id : null, $row->course_slug);
+
+        return back()->with('success', 'Soal berhasil dihapus dari question bank.');
+    }
+
+    public function previewAiQuestions(Request $request, AiQuestionGenerator $generator): RedirectResponse
+    {
+        $payload = $this->validateAiQuestionRequest($request);
+
+        try {
+            $generated = $generator->generate($payload);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['ai_preview' => $exception->getMessage()])->withInput();
+        }
+
+        session([
+            self::AI_PREVIEW_SESSION_KEY => array_merge($payload, [
+                'preview_batch' => (string) Str::uuid(),
+                'questions' => $generated['questions'],
+                'usage' => $generated['usage'],
+            ]),
+        ]);
+
+        return back()->with('success', 'Preview soal AI berhasil dibuat.');
+    }
+
+    public function saveAiQuestions(Request $request): RedirectResponse
+    {
+        $preview = session(self::AI_PREVIEW_SESSION_KEY);
+        if (!is_array($preview) || empty($preview['questions'])) {
+            return back()->withErrors(['ai_preview' => 'Preview soal AI belum tersedia.']);
+        }
+
+        $savedCount = $this->insertGeneratedQuestions($preview);
+        session()->forget(self::AI_PREVIEW_SESSION_KEY);
+        $this->forgetDashboardCaches();
+
+        return back()->with('success', $savedCount.' soal AI berhasil disimpan ke question bank.');
     }
 
     public function answerCourseQuestion(Request $request, int $question): RedirectResponse
@@ -251,7 +528,7 @@ class DosenDashboardController extends Controller
         $ownedQuestion = DB::table('course_questions')
             ->where('id', $question)
             ->where('dosen_id', auth()->id())
-            ->first(['id']);
+            ->first(['id', 'course_slug']);
 
         abort_if(!$ownedQuestion, 404);
 
@@ -261,6 +538,8 @@ class DosenDashboardController extends Controller
                 'answer_text' => $validated['answer_text'],
                 'updated_at' => now(),
             ]);
+
+        $this->forgetCourseCaches(null, $ownedQuestion->course_slug ?? null);
 
         return back()->with('success', 'Jawaban Q&A berhasil disimpan.');
     }
@@ -394,6 +673,8 @@ class DosenDashboardController extends Controller
             ]
         );
 
+        $this->forgetCourseCaches((int) $validated['quiz_id'], 'quiz-'.$validated['quiz_id']);
+
         return back()->with('success', 'Course info berhasil diperbarui.');
     }
 
@@ -481,6 +762,8 @@ class DosenDashboardController extends Controller
                 'created_at' => now(),
             ]
         );
+
+        $this->forgetCourseCaches(null, 'frontend-craft');
 
         return back()->with('success', 'Frontend Craft page content berhasil diperbarui.');
     }

@@ -5,8 +5,10 @@ use App\Http\Controllers\DosenDashboardController;
 use App\Http\Controllers\InstructorCourseController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\StudentCourseController;
+use App\Http\Controllers\StudentChatbotController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureDosen;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -17,35 +19,41 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    $quizCourses = DB::table('quizzes')
-        ->select('id', 'title')
-        ->orderByDesc('created_at')
-        ->limit(30)
-        ->get();
+    $landingCourses = Cache::remember('landing:courses', 300, function () {
+        $quizCourses = DB::table('quizzes')
+            ->select('id', 'title')
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
 
-    $landingCourses = collect([
-        [
-            'title' => 'Frontend Craft',
-            'href' => route('courses.frontend-craft.info'),
-        ],
-    ]);
+        $courses = collect([
+            [
+                'title' => 'Frontend Craft',
+                'href' => route('courses.frontend-craft.info'),
+            ],
+        ]);
 
-    foreach ($quizCourses as $quiz) {
-        if (strtolower(trim((string) $quiz->title)) === 'frontend craft') {
-            continue;
+        foreach ($quizCourses as $quiz) {
+            if (strtolower(trim((string) $quiz->title)) === 'frontend craft') {
+                continue;
+            }
+
+            $courses->push([
+                'title' => $quiz->title,
+                'href' => route('courses.quiz.info', ['quiz' => $quiz->id]),
+            ]);
         }
 
-        $landingCourses->push([
-            'title' => $quiz->title,
-            'href' => route('courses.quiz.info', ['quiz' => $quiz->id]),
-        ]);
-    }
+        return $courses;
+    });
 
-    $landingStats = [
-        'total_courses' => $landingCourses->count(),
-        'total_learners' => DB::table('users')->where('role', 'student')->count(),
-        'total_mentors' => DB::table('users')->where('role', 'dosen')->count(),
-    ];
+    $landingStats = Cache::remember('landing:stats', 300, function () use ($landingCourses) {
+        return [
+            'total_courses' => $landingCourses->count(),
+            'total_learners' => DB::table('users')->where('role', 'student')->count(),
+            'total_mentors' => DB::table('users')->where('role', 'dosen')->count(),
+        ];
+    });
 
     return view('landing', [
         'landingCourses' => $landingCourses,
@@ -82,6 +90,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/courses', [AdminDashboardController::class, 'storeQuiz'])->name('courses.store');
 
         Route::post('/questions', [AdminDashboardController::class, 'storeQuestion'])->name('questions.store');
+        Route::delete('/questions/{question}', [AdminDashboardController::class, 'deleteQuestion'])->name('questions.delete');
+        Route::post('/questions/ai/preview', [AdminDashboardController::class, 'previewAiQuestions'])->name('questions.ai.preview');
+        Route::post('/questions/ai/save', [AdminDashboardController::class, 'saveAiQuestions'])->name('questions.ai.save');
         Route::post('/questions/import', [AdminDashboardController::class, 'importQuestions'])->name('questions.import');
         Route::get('/questions/export', [AdminDashboardController::class, 'exportQuestions'])->name('questions.export');
 
@@ -93,11 +104,14 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('/settings/maintenance', [AdminDashboardController::class, 'setMaintenance'])->name('settings.maintenance');
         Route::post('/settings/identity', [AdminDashboardController::class, 'updateSiteIdentity'])->name('settings.identity');
+        Route::post('/settings/chatbot', [AdminDashboardController::class, 'updateChatbotSettings'])->name('settings.chatbot');
         Route::post('/courses/info', [AdminDashboardController::class, 'updateCourseInfo'])->name('courses.info.update');
         Route::post('/courses/frontend-craft/page', [AdminDashboardController::class, 'updateFrontendCraftPage'])->name('courses.frontend-craft.page.update');
     });
 
     Route::get('/student/dashboard', [StudentCourseController::class, 'dashboard'])->name('student.dashboard');
+    Route::get('/student/courses', [StudentCourseController::class, 'coursesDirectory'])->name('student.courses');
+    Route::get('/student/mentors', [StudentCourseController::class, 'mentorsDirectory'])->name('student.mentors');
 
     Route::middleware([EnsureDosen::class])->prefix('dosen')->name('dosen.')->group(function () {
         Route::get('/dashboard', [DosenDashboardController::class, 'dashboard'])->name('dashboard');
@@ -105,6 +119,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/courses/info', [DosenDashboardController::class, 'updateCourseInfo'])->name('courses.info.update');
         Route::post('/courses/frontend-craft/page', [DosenDashboardController::class, 'updateFrontendCraftPage'])->name('courses.frontend-craft.page.update');
         Route::post('/questions', [DosenDashboardController::class, 'storeQuestion'])->name('questions.store');
+        Route::delete('/questions/{question}', [DosenDashboardController::class, 'deleteQuestion'])->name('questions.delete');
+        Route::post('/questions/ai/preview', [DosenDashboardController::class, 'previewAiQuestions'])->name('questions.ai.preview');
+        Route::post('/questions/ai/save', [DosenDashboardController::class, 'saveAiQuestions'])->name('questions.ai.save');
         Route::patch('/questions/{question}/answer', [DosenDashboardController::class, 'answerCourseQuestion'])->name('questions.answer');
         Route::get('/scores/export', [DosenDashboardController::class, 'exportScores'])->name('scores.export');
     });
@@ -115,6 +132,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/courses/frontend-craft/chapters/{chapter}', [StudentCourseController::class, 'frontendCraftChapter'])
         ->whereNumber('chapter')
         ->name('courses.frontend-craft.chapter');
+    Route::match(['get', 'post'], '/courses/frontend-craft/chapters/{chapter}/complete', [StudentCourseController::class, 'completeFrontendCraftChapter'])
+        ->whereNumber('chapter')
+        ->name('courses.frontend-craft.chapter.complete');
+    Route::get('/courses/frontend-craft/pop-quiz/{afterChapter}', [StudentCourseController::class, 'frontendCraftPopQuiz'])
+        ->whereNumber('afterChapter')
+        ->name('courses.frontend-craft.pop-quiz');
+    Route::post('/courses/frontend-craft/pop-quiz/{afterChapter}', [StudentCourseController::class, 'submitFrontendCraftPopQuiz'])
+        ->whereNumber('afterChapter')
+        ->name('courses.frontend-craft.pop-quiz.submit');
     Route::get('/courses/quiz/{quiz}', [StudentCourseController::class, 'showQuizCourse'])->whereNumber('quiz')->name('courses.quiz.show');
     Route::get('/courses/quiz/{quiz}/info', [StudentCourseController::class, 'quizInfo'])->whereNumber('quiz')->name('courses.quiz.info');
     Route::post('/courses/quiz/{quiz}/enroll', [StudentCourseController::class, 'enrollQuiz'])->whereNumber('quiz')->name('courses.quiz.enroll');
@@ -123,11 +149,27 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('quiz')
         ->whereNumber('chapter')
         ->name('courses.quiz.chapter');
+    Route::match(['get', 'post'], '/courses/quiz/{quiz}/chapters/{chapter}/complete', [StudentCourseController::class, 'completeQuizChapter'])
+        ->whereNumber('quiz')
+        ->whereNumber('chapter')
+        ->name('courses.quiz.chapter.complete');
+    Route::get('/courses/quiz/{quiz}/pop-quiz/{afterChapter}', [StudentCourseController::class, 'quizPopQuiz'])
+        ->whereNumber('quiz')
+        ->whereNumber('afterChapter')
+        ->name('courses.quiz.pop-quiz');
+    Route::post('/courses/quiz/{quiz}/pop-quiz/{afterChapter}', [StudentCourseController::class, 'submitQuizPopQuiz'])
+        ->whereNumber('quiz')
+        ->whereNumber('afterChapter')
+        ->name('courses.quiz.pop-quiz.submit');
     Route::get('/mentors/{mentor}', [StudentCourseController::class, 'mentorProfile'])->whereNumber('mentor')->name('mentors.show');
     Route::post('/courses/{slug}/enroll', [StudentCourseController::class, 'enroll'])->name('courses.enroll');
     Route::post('/courses/{slug}/favorite', [StudentCourseController::class, 'toggleFavorite'])->name('courses.favorite');
+    Route::post('/courses/{slug}/consistent-mode', [StudentCourseController::class, 'updateConsistentMode'])->name('courses.consistent-mode.update');
     Route::post('/courses/{slug}/reviews', [StudentCourseController::class, 'submitReview'])->name('courses.reviews.store');
     Route::post('/courses/{slug}/questions', [StudentCourseController::class, 'submitQuestion'])->name('courses.questions.store');
+    Route::get('/student/chatbot/messages', [StudentChatbotController::class, 'history'])->name('student.chatbot.history');
+    Route::post('/student/chatbot/messages', [StudentChatbotController::class, 'send'])->name('student.chatbot.send');
+    Route::delete('/student/chatbot/messages', [StudentChatbotController::class, 'clear'])->name('student.chatbot.clear');
 
     Route::get('/instructor/courses/{course}/roadmap', [InstructorCourseController::class, 'roadmap'])->name('instructor.courses.roadmap');
     Route::get('/instructor/courses/{course}/chapters/{chapter}', [InstructorCourseController::class, 'showLesson'])
