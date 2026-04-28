@@ -162,12 +162,19 @@
             border-radius: 10px;
             background: rgba(8, 14, 27, 0.72);
             padding: 10px;
+            min-height: 86px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .stat strong {
-            display: block;
+            display: flex;
+            align-items: flex-start;
             font-size: 17px;
-            margin-bottom: 2px;
+            line-height: 1.3;
+            min-height: 44px;
+            margin-bottom: 4px;
         }
 
         .video-box {
@@ -242,7 +249,10 @@
             top: 70px;
             max-height: calc(100vh - 86px);
             overflow: auto;
+            scrollbar-width: none;
         }
+
+        .chapter-rail::-webkit-scrollbar { display: none; }
 
         .chapter-list {
             display: grid;
@@ -468,8 +478,9 @@
         }
     }
 
-    $estimatedHours = $course->duration_text ?: ($chaptersCount.' chapters');
     $hasCurrentVideo = (bool) ($lesson && ($lesson->video_path || $lesson->video_url));
+    $estimatedTime = $course->duration_text ?: ($hasCurrentVideo ? 'Video lesson ready' : 'Waiting for mentor update');
+    $mentorLabel = $chapterMentorName ?? ($course->mentor_name ?? 'Mentor not assigned yet');
 @endphp
 <header class="topbar">
     <div class="topbar-inner">
@@ -496,13 +507,15 @@
         <main>
             <section class="card panel active" id="panel-course-content">
                 <h1>{{ $lessonTitle ?? ("Chapter {$chapter}") }}</h1>
-                <p class="muted">{{ $course->tagline ?: 'Materi chapter ini berasal dari Chapter Builder yang diatur oleh Admin/Dosen.' }}</p>
+                @if(!empty($course->tagline))
+                    <p class="muted">{{ $course->tagline }}</p>
+                @endif
 
                 <div class="meta-grid">
                     <div class="stat"><strong>{{ ucfirst($course->difficulty ?? 'beginner') }}</strong><span class="muted">Skill Level</span></div>
                     <div class="stat"><strong>{{ $chaptersCount }}</strong><span class="muted">Total Chapters</span></div>
-                    <div class="stat"><strong>{{ $estimatedHours }}</strong><span class="muted">Estimated Duration</span></div>
-                    <div class="stat"><strong>{{ $course->mentor_name ?? 'Digital Skill Team' }}</strong><span class="muted">Mentor</span></div>
+                    <div class="stat"><strong>{{ $estimatedTime }}</strong><span class="muted">Estimated Time</span></div>
+                    <div class="stat"><strong>{{ $mentorLabel }}</strong><span class="muted">Mentor</span></div>
                 </div>
 
                 <div class="video-box">

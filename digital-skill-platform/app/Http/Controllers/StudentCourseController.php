@@ -54,6 +54,19 @@ class StudentCourseController extends Controller
         );
     }
 
+    private function userNameById(?int $userId): ?string
+    {
+        if (empty($userId)) {
+            return null;
+        }
+
+        return Cache::remember(
+            $this->cacheKey('user_name', (string) $userId),
+            self::CACHE_TTL_SECONDS,
+            fn () => DB::table('users')->where('id', $userId)->value('name')
+        );
+    }
+
     private function lessonsByCourseSlug(string $slug)
     {
         return Cache::remember(
@@ -1269,12 +1282,17 @@ class StudentCourseController extends Controller
         $pendingPopQuizPrompt = (!empty($progress['states'][$chapter]['is_completed']) && !empty($progress['pop_quizzes'][$chapter]) && empty($progress['pop_quizzes'][$chapter]['is_passed']))
             ? $progress['pop_quizzes'][$chapter]
             : null;
+        $chapterMentorName = $this->userNameById($lesson?->updated_by)
+            ?? $course->mentor_name
+            ?? 'Mentor not assigned yet';
+
         return view('courses.quiz-chapter', [
             'course' => $course,
             'chapter' => $chapter,
             'lesson' => $lesson,
             'lessonTitle' => $lesson?->title ?? $currentDefault['title'],
             'lessonDescription' => $lesson?->description ?? $currentDefault['description'],
+            'chapterMentorName' => $chapterMentorName,
             'chapterItems' => $chapterItems,
             'chaptersCount' => $chaptersCount,
             'videoReadyCount' => $videoReadyCount,
@@ -1379,6 +1397,9 @@ class StudentCourseController extends Controller
         $pendingPopQuizPrompt = (!empty($progress['states'][$chapter]['is_completed']) && !empty($progress['pop_quizzes'][$chapter]) && empty($progress['pop_quizzes'][$chapter]['is_passed']))
             ? $progress['pop_quizzes'][$chapter]
             : null;
+        $chapterMentorName = $this->userNameById($lesson?->updated_by)
+            ?? $course->mentor_name
+            ?? 'Mentor not assigned yet';
 
         return view('courses.quiz-chapter', [
             'course' => $course,
@@ -1386,6 +1407,7 @@ class StudentCourseController extends Controller
             'lesson' => $lesson,
             'lessonTitle' => $lesson?->title ?? $currentDefault['title'],
             'lessonDescription' => $lesson?->description ?? $currentDefault['description'],
+            'chapterMentorName' => $chapterMentorName,
             'chapterItems' => $chapterItems,
             'chaptersCount' => $chaptersCount,
             'videoReadyCount' => $videoReadyCount,
