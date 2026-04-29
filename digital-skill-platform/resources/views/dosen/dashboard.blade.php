@@ -772,10 +772,7 @@
                             <option value="mixed_all" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mixed_all')>Mixed All Types</option>
                         </select>
                         <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $dosenAiPreview['placement_after_chapter'] ?? '') }}" placeholder="Insert after chapter (optional)">
-                        <label class="muted" style="display:flex;gap:8px;align-items:center;">
-                            <input type="checkbox" name="is_pop_quiz" value="1" @checked(old('is_pop_quiz', $dosenAiPreview['is_pop_quiz'] ?? false))>
-                            Jadikan pop quiz merah yang disisipkan setelah chapter tersebut
-                        </label>
+                        <p class="muted" style="margin:0;">Jika kamu isi posisi chapter, sistem otomatis menjadikannya pop quiz merah yang wajib diselesaikan sebelum lanjut.</p>
                         <button class="btn btn-primary" type="submit">Preview Questions</button>
                     </form>
                 </article>
@@ -802,10 +799,7 @@
                             <option value="advanced">Advanced</option>
                         </select>
                         <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="Insert after chapter (optional)">
-                        <label class="muted" style="display:flex;gap:8px;align-items:center;">
-                            <input type="checkbox" name="is_pop_quiz" value="1">
-                            Jadikan pop quiz merah / wajib perfect score
-                        </label>
+                        <p class="muted" style="margin:0;">Isi posisi chapter jika soal ini harus otomatis muncul sebagai pop quiz merah / wajib perfect score.</p>
                         <input type="text" name="correct_answer" placeholder="Jawaban benar (opsional)">
                         <textarea name="options_json" placeholder='Pilihan JSON, ex: ["A","B","C","D"]'></textarea>
                         <button class="btn btn-primary" type="submit">Simpan Soal</button>

@@ -183,7 +183,6 @@ class AdminDashboardController extends Controller
             'question_count' => ['required', 'integer', 'min:1', 'max:10'],
             'question_type_mode' => ['required', 'in:mcq,essay,true_false,mixed_mcq_essay,mixed_all'],
             'placement_after_chapter' => ['nullable', 'integer', 'min:1', 'max:40'],
-            'is_pop_quiz' => ['nullable', 'boolean'],
         ]);
 
         $context = $this->courseContextFromKey($validated['course_key']);
@@ -193,8 +192,10 @@ class AdminDashboardController extends Controller
             ]);
         }
 
+        $isPopQuiz = !empty($validated['placement_after_chapter']);
+
         return array_merge($validated, $context, [
-            'is_pop_quiz' => (bool) ($validated['is_pop_quiz'] ?? false),
+            'is_pop_quiz' => $isPopQuiz,
         ]);
     }
 
@@ -623,10 +624,10 @@ class AdminDashboardController extends Controller
             'correct_answer' => ['nullable', 'string'],
             'options_json' => ['nullable', 'string'],
             'placement_after_chapter' => ['nullable', 'integer', 'min:1', 'max:40'],
-            'is_pop_quiz' => ['nullable', 'boolean'],
         ]);
 
         $context = $this->courseContextFromKey($validated['course_key']);
+        $isPopQuiz = !empty($validated['placement_after_chapter']);
 
         DB::table('question_bank')->insert([
             'quiz_id' => $context['quiz_id'],
@@ -638,8 +639,8 @@ class AdminDashboardController extends Controller
             'correct_answer' => $validated['correct_answer'] ?? null,
             'options_json' => $validated['options_json'] ?? null,
             'placement_after_chapter' => $validated['placement_after_chapter'] ?? null,
-            'is_pop_quiz' => (bool) ($validated['is_pop_quiz'] ?? false),
-            'requires_perfect_score' => (bool) ($validated['is_pop_quiz'] ?? false),
+            'is_pop_quiz' => $isPopQuiz,
+            'requires_perfect_score' => $isPopQuiz,
             'question_origin' => 'manual',
             'created_by' => auth()->id(),
             'created_at' => now(),
