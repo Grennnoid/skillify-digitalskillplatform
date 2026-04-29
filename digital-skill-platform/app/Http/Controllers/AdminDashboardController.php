@@ -159,7 +159,7 @@ class AdminDashboardController extends Controller
         $slugs = array_keys($courseMeta);
         $states = DB::table('user_course_states')
             ->whereIn('course_slug', $slugs)
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->get(['user_id', 'course_slug', 'consistent_mode_enabled']);
 
         $progressRows = DB::table('user_chapter_progress')
@@ -402,6 +402,15 @@ class AdminDashboardController extends Controller
         }
     }
 
+    private function databaseBoolean(bool $value): mixed
+    {
+        if (DB::getDriverName() === 'pgsql') {
+            return DB::raw($value ? 'TRUE' : 'FALSE');
+        }
+
+        return $value;
+    }
+
     private function courseContextFromKey(string $courseKey): array
     {
         if ($courseKey === 'frontend-craft') {
@@ -469,6 +478,7 @@ class AdminDashboardController extends Controller
 
     private function insertGeneratedQuestions(array $preview): int
     {
+        $databaseIsPopQuiz = $this->databaseBoolean((bool) $preview['is_pop_quiz']);
         $rows = [];
         foreach ($preview['questions'] as $question) {
             $rows[] = [
@@ -481,8 +491,8 @@ class AdminDashboardController extends Controller
                 'correct_answer' => $question['correct_answer'] !== '' ? $question['correct_answer'] : null,
                 'options_json' => $question['options_json'],
                 'placement_after_chapter' => $preview['placement_after_chapter'] ?: null,
-                'is_pop_quiz' => (bool) $preview['is_pop_quiz'],
-                'requires_perfect_score' => (bool) $preview['is_pop_quiz'],
+                'is_pop_quiz' => $databaseIsPopQuiz,
+                'requires_perfect_score' => $databaseIsPopQuiz,
                 'question_origin' => 'ai',
                 'generation_notes' => $preview['generation_notes'],
                 'created_by' => auth()->id(),
@@ -658,7 +668,7 @@ class AdminDashboardController extends Controller
                 'total_sessions' => (int) ($attendanceStatsRow->total_sessions ?? 0),
                 'attended_sessions' => (int) ($attendanceStatsRow->attended_sessions ?? 0),
                 'active_consistent_students' => (int) DB::table('user_course_states')
-                    ->where('consistent_mode_enabled', true)
+                    ->whereRaw('"consistent_mode_enabled" IS TRUE')
                     ->distinct('user_id')
                     ->count('user_id'),
             ];
@@ -910,6 +920,7 @@ class AdminDashboardController extends Controller
 
         $context = $this->courseContextFromKey($validated['course_key']);
         $isPopQuiz = !empty($validated['placement_after_chapter']);
+        $databaseIsPopQuiz = $this->databaseBoolean($isPopQuiz);
 
         DB::table('question_bank')->insert([
             'quiz_id' => $context['quiz_id'],
@@ -921,8 +932,8 @@ class AdminDashboardController extends Controller
             'correct_answer' => $validated['correct_answer'] ?? null,
             'options_json' => $validated['options_json'] ?? null,
             'placement_after_chapter' => $validated['placement_after_chapter'] ?? null,
-            'is_pop_quiz' => $isPopQuiz,
-            'requires_perfect_score' => $isPopQuiz,
+            'is_pop_quiz' => $databaseIsPopQuiz,
+            'requires_perfect_score' => $databaseIsPopQuiz,
             'question_origin' => 'manual',
             'created_by' => auth()->id(),
             'created_at' => now(),

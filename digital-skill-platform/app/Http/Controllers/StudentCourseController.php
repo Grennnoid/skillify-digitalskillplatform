@@ -121,7 +121,7 @@ class StudentCourseController extends Controller
     {
         return DB::table('question_bank')
             ->where('course_slug', $slug)
-            ->where('is_pop_quiz', true)
+            ->whereRaw('"is_pop_quiz" IS TRUE')
             ->whereNotNull('placement_after_chapter')
             ->orderBy('placement_after_chapter')
             ->orderBy('id')
@@ -1440,7 +1440,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', $slug)
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1482,7 +1482,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', 'frontend-craft')
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1591,7 +1591,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', 'frontend-craft')
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1620,7 +1620,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', 'frontend-craft')
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1645,7 +1645,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', $slug)
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1668,7 +1668,7 @@ class StudentCourseController extends Controller
         $state = auth()->user()
             ->courseStates()
             ->where('course_slug', $slug)
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
         abort_unless($state, 403);
 
@@ -1736,7 +1736,7 @@ class StudentCourseController extends Controller
         $enrolled = auth()->user()
             ->courseStates()
             ->where('course_slug', $context['course_slug'])
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
 
         if (!$enrolled) {
@@ -1783,7 +1783,7 @@ class StudentCourseController extends Controller
         $enrolled = auth()->user()
             ->courseStates()
             ->where('course_slug', $context['course_slug'])
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
 
         if (!$enrolled) {
@@ -1838,7 +1838,7 @@ class StudentCourseController extends Controller
         $enrolled = auth()->user()
             ->courseStates()
             ->where('course_slug', $context['course_slug'])
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->exists();
 
         if (!$enrolled) {

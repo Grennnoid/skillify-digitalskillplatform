@@ -164,7 +164,7 @@ class DosenDashboardController extends Controller
         $slugs = array_keys($courseMeta);
         $states = DB::table('user_course_states')
             ->whereIn('course_slug', $slugs)
-            ->where('is_enrolled', true)
+            ->whereRaw('"is_enrolled" IS TRUE')
             ->get(['user_id', 'course_slug', 'consistent_mode_enabled']);
 
         $progressRows = DB::table('user_chapter_progress')
@@ -372,6 +372,15 @@ class DosenDashboardController extends Controller
         }
     }
 
+    private function databaseBoolean(bool $value): mixed
+    {
+        if (DB::getDriverName() === 'pgsql') {
+            return DB::raw($value ? 'TRUE' : 'FALSE');
+        }
+
+        return $value;
+    }
+
     private function courseContextFromKey(string $courseKey): array
     {
         if ($courseKey === 'frontend-craft') {
@@ -442,6 +451,7 @@ class DosenDashboardController extends Controller
 
     private function insertGeneratedQuestions(array $preview): int
     {
+        $databaseIsPopQuiz = $this->databaseBoolean((bool) $preview['is_pop_quiz']);
         $rows = [];
         foreach ($preview['questions'] as $question) {
             $rows[] = [
@@ -454,8 +464,8 @@ class DosenDashboardController extends Controller
                 'correct_answer' => $question['correct_answer'] !== '' ? $question['correct_answer'] : null,
                 'options_json' => $question['options_json'],
                 'placement_after_chapter' => $preview['placement_after_chapter'] ?: null,
-                'is_pop_quiz' => (bool) $preview['is_pop_quiz'],
-                'requires_perfect_score' => (bool) $preview['is_pop_quiz'],
+                'is_pop_quiz' => $databaseIsPopQuiz,
+                'requires_perfect_score' => $databaseIsPopQuiz,
                 'question_origin' => 'ai',
                 'generation_notes' => $preview['generation_notes'],
                 'created_by' => auth()->id(),
@@ -759,6 +769,7 @@ class DosenDashboardController extends Controller
 
         $context = $this->courseContextFromKey($validated['course_key']);
         $isPopQuiz = !empty($validated['placement_after_chapter']);
+        $databaseIsPopQuiz = $this->databaseBoolean($isPopQuiz);
 
         DB::table('question_bank')->insert([
             'quiz_id' => $context['quiz_id'],
@@ -770,8 +781,8 @@ class DosenDashboardController extends Controller
             'correct_answer' => $validated['correct_answer'] ?? null,
             'options_json' => $validated['options_json'] ?? null,
             'placement_after_chapter' => $validated['placement_after_chapter'] ?? null,
-            'is_pop_quiz' => $isPopQuiz,
-            'requires_perfect_score' => $isPopQuiz,
+            'is_pop_quiz' => $databaseIsPopQuiz,
+            'requires_perfect_score' => $databaseIsPopQuiz,
             'question_origin' => 'manual',
             'created_by' => auth()->id(),
             'created_at' => now(),

@@ -66,7 +66,7 @@ class AuthController extends Controller
         $user = Auth::user();
         $favoriteCourses = $user
             ->courseStates()
-            ->where('is_favorite', true)
+            ->whereRaw('"is_favorite" IS TRUE')
             ->orderBy('course_title')
             ->get(['course_slug', 'course_title']);
 

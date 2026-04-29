@@ -635,7 +635,7 @@
 </div>
 
 @if(!empty($pendingPopQuizPrompt))
-    <div class="quiz-gate-overlay {{ request()->has('quiz_gate') ? 'open' : '' }}" id="quizGateOverlay">
+    <div class="quiz-gate-overlay open" id="quizGateOverlay">
         <div class="quiz-gate-modal">
             <h3>Pop Quiz Unlocked</h3>
             <p>Kamu baru membuka pop quiz setelah Chapter {{ $pendingPopQuizPrompt['placement_after_chapter'] }}. Sebelum lanjut ke chapter berikutnya, kamu harus menjawab {{ $pendingPopQuizPrompt['question_count'] }} soal ini dengan benar.</p>
