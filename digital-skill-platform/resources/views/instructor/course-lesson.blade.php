@@ -97,6 +97,14 @@
             font-size: 13px;
             outline: none;
         }
+        select {
+            appearance: none;
+            padding-right: 34px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23d4e3ff' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px 8px;
+        }
         textarea { min-height: 130px; resize: vertical; }
         .btn {
             border: 0;
