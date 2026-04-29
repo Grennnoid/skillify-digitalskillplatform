@@ -108,6 +108,241 @@ class DosenDashboardController extends Controller
         ];
     }
 
+    private function buildManagedCourseMeta($courses, ?object $frontendCraftContent, bool $canManageFrontendCraft, int $dosenId): array
+    {
+        $courseMeta = [];
+
+        foreach ($courses as $course) {
+            $courseMeta['quiz-'.$course->id] = [
+                'title' => $course->title,
+                'dosen_id' => $dosenId,
+            ];
+        }
+
+        if ($canManageFrontendCraft) {
+            $courseMeta['frontend-craft'] = [
+                'title' => $frontendCraftContent->hero_title ?? 'Frontend Craft',
+                'dosen_id' => $dosenId,
+            ];
+        }
+
+        if (empty($courseMeta)) {
+            return [];
+        }
+
+        $chapterCounts = DB::table('course_lessons')
+            ->whereIn('course_slug', array_keys($courseMeta))
+            ->select('course_slug', DB::raw('MAX(chapter_number) as max_chapter'))
+            ->groupBy('course_slug')
+            ->pluck('max_chapter', 'course_slug');
+
+        foreach ($courseMeta as $slug => $meta) {
+            $courseMeta[$slug]['chapter_count'] = max(8, (int) ($chapterCounts[$slug] ?? 0));
+        }
+
+        return $courseMeta;
+    }
+
+    private function buildDosenProgressAnalytics(array $courseMeta, int $dosenId): array
+    {
+        if (empty($courseMeta)) {
+            return [
+                'overview' => [
+                    'active_learners' => 0,
+                    'consistent_rate' => 0,
+                    'avg_progress' => 0,
+                    'attendance_rate' => 0,
+                    'pop_quiz_mastery' => 0,
+                    'qa_answer_rate' => 0,
+                ],
+                'weekly_rows' => [],
+                'course_health_rows' => [],
+                'student_focus_rows' => [],
+            ];
+        }
+
+        $slugs = array_keys($courseMeta);
+        $states = DB::table('user_course_states')
+            ->whereIn('course_slug', $slugs)
+            ->where('is_enrolled', true)
+            ->get(['user_id', 'course_slug', 'consistent_mode_enabled']);
+
+        $progressRows = DB::table('user_chapter_progress')
+            ->whereIn('course_slug', $slugs)
+            ->whereNotNull('completed_at')
+            ->select('user_id', 'course_slug', DB::raw('COUNT(*) as completed_count'), DB::raw('MAX(completed_at) as last_completed_at'))
+            ->groupBy('user_id', 'course_slug')
+            ->get();
+
+        $attendanceRows = DB::table('course_attendance_logs')
+            ->whereIn('course_slug', $slugs)
+            ->get(['user_id', 'course_slug', 'attendance_date', 'target_chapters', 'chapters_completed', 'is_attended', 'updated_at']);
+
+        $popQuizRows = DB::table('user_pop_quiz_progress')
+            ->whereIn('course_slug', $slugs)
+            ->get(['user_id', 'course_slug', 'passed_at']);
+
+        $qaRows = DB::table('course_questions')
+            ->where('dosen_id', $dosenId)
+            ->whereIn('course_slug', $slugs)
+            ->get(['user_id', 'course_slug', 'answer_text']);
+
+        $recentProgressRows = DB::table('user_chapter_progress')
+            ->whereIn('course_slug', $slugs)
+            ->whereNotNull('completed_at')
+            ->whereDate('completed_at', '>=', now()->copy()->subDays(6)->toDateString())
+            ->get(['course_slug', 'completed_at']);
+
+        $userIds = $states->pluck('user_id')
+            ->merge($progressRows->pluck('user_id'))
+            ->merge($attendanceRows->pluck('user_id'))
+            ->merge($qaRows->pluck('user_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $userNames = \App\Models\User::query()
+            ->whereIn('id', $userIds)
+            ->pluck('name', 'id');
+
+        $progressMap = $progressRows->keyBy(fn ($row) => $row->course_slug.'|'.$row->user_id);
+        $attendanceMap = $attendanceRows->groupBy(fn ($row) => $row->course_slug.'|'.$row->user_id);
+        $attendanceBySlug = $attendanceRows->groupBy('course_slug');
+        $popQuizBySlug = $popQuizRows->groupBy('course_slug');
+        $qaBySlug = $qaRows->groupBy('course_slug');
+
+        $enrollmentAnalytics = $states->map(function ($state) use ($courseMeta, $progressMap, $attendanceMap, $userNames) {
+            $key = $state->course_slug.'|'.$state->user_id;
+            $course = $courseMeta[$state->course_slug];
+            $progressRow = $progressMap->get($key);
+            $completedCount = (int) ($progressRow->completed_count ?? 0);
+            $chapterCount = max(1, (int) ($course['chapter_count'] ?? 1));
+            $progressPercent = (int) round(min(100, ($completedCount / $chapterCount) * 100));
+            $attendanceItems = collect($attendanceMap->get($key, collect()));
+            $attendanceTotal = $attendanceItems->count();
+            $attendanceCounted = $attendanceItems->where('is_attended', true)->count();
+            $attendanceRate = $attendanceTotal > 0 ? (int) round(($attendanceCounted / $attendanceTotal) * 100) : 0;
+            $lastAttendanceAt = $attendanceItems->sortByDesc('updated_at')->first()->updated_at ?? null;
+            $lastCompletedAt = $progressRow->last_completed_at ?? null;
+            $lastActivity = collect([$lastCompletedAt, $lastAttendanceAt])->filter()->sortDesc()->first();
+
+            $status = 'On Track';
+            if ($progressPercent >= 80 && $attendanceRate >= 70) {
+                $status = 'Strong';
+            } elseif ($progressPercent < 35 || ($attendanceTotal > 0 && $attendanceRate < 50)) {
+                $status = 'Needs Attention';
+            }
+
+            return [
+                'user_id' => (int) $state->user_id,
+                'student_name' => $userNames[$state->user_id] ?? 'Student',
+                'course_slug' => $state->course_slug,
+                'course_title' => $course['title'],
+                'progress_percent' => $progressPercent,
+                'attendance_rate' => $attendanceRate,
+                'consistent_mode_enabled' => (bool) $state->consistent_mode_enabled,
+                'last_activity' => $lastActivity,
+                'status' => $status,
+            ];
+        })->values();
+
+        $attendanceCountedTotal = $attendanceRows->where('is_attended', true)->count();
+        $attendanceRateTotal = $attendanceRows->count() > 0
+            ? (int) round(($attendanceCountedTotal / $attendanceRows->count()) * 100)
+            : 0;
+        $popQuizPassed = $popQuizRows->filter(fn ($row) => !empty($row->passed_at))->count();
+        $popQuizMastery = $popQuizRows->count() > 0
+            ? (int) round(($popQuizPassed / $popQuizRows->count()) * 100)
+            : 0;
+        $qaAnswered = $qaRows->filter(fn ($row) => filled(trim((string) $row->answer_text)))->count();
+        $qaAnswerRate = $qaRows->count() > 0
+            ? (int) round(($qaAnswered / $qaRows->count()) * 100)
+            : 0;
+        $consistentRate = $states->count() > 0
+            ? (int) round(($states->where('consistent_mode_enabled', true)->count() / $states->count()) * 100)
+            : 0;
+
+        $courseHealthRows = collect($courseMeta)->map(function ($meta, $slug) use ($enrollmentAnalytics, $attendanceBySlug, $popQuizBySlug, $qaBySlug) {
+            $courseEnrollments = $enrollmentAnalytics->where('course_slug', $slug);
+            $attendanceItems = collect($attendanceBySlug->get($slug, collect()));
+            $popItems = collect($popQuizBySlug->get($slug, collect()));
+            $qaItems = collect($qaBySlug->get($slug, collect()));
+            $attendanceRate = $attendanceItems->count() > 0
+                ? (int) round(($attendanceItems->where('is_attended', true)->count() / $attendanceItems->count()) * 100)
+                : 0;
+            $popMastery = $popItems->count() > 0
+                ? (int) round(($popItems->filter(fn ($row) => !empty($row->passed_at))->count() / $popItems->count()) * 100)
+                : 0;
+
+            return [
+                'course_title' => $meta['title'],
+                'enrolled_students' => $courseEnrollments->pluck('user_id')->unique()->count(),
+                'consistent_users' => $courseEnrollments->where('consistent_mode_enabled', true)->count(),
+                'avg_progress' => (int) round($courseEnrollments->avg('progress_percent') ?? 0),
+                'attendance_rate' => $attendanceRate,
+                'pop_quiz_mastery' => $popMastery,
+                'open_questions' => $qaItems->filter(fn ($row) => blank(trim((string) $row->answer_text)))->count(),
+            ];
+        })->values();
+
+        $dateKeys = collect(range(6, 0))->map(fn ($offset) => now()->copy()->subDays($offset)->toDateString());
+        $completionCounts = $recentProgressRows->groupBy(fn ($row) => substr((string) $row->completed_at, 0, 10))
+            ->map(fn ($rows) => $rows->count());
+        $attendanceCounts = $attendanceRows
+            ->where('is_attended', true)
+            ->where('attendance_date', '>=', now()->copy()->subDays(6)->toDateString())
+            ->groupBy('attendance_date')
+            ->map(fn ($rows) => $rows->count());
+        $trendMax = max(1, (int) max(
+            $completionCounts->max() ?? 0,
+            $attendanceCounts->max() ?? 0
+        ));
+
+        $weeklyRows = $dateKeys->map(function ($date) use ($completionCounts, $attendanceCounts, $trendMax) {
+            $completions = (int) ($completionCounts[$date] ?? 0);
+            $attendance = (int) ($attendanceCounts[$date] ?? 0);
+
+            return [
+                'label' => \Illuminate\Support\Carbon::parse($date)->format('d M'),
+                'completions' => $completions,
+                'attendance' => $attendance,
+                'width' => (int) round((max($completions, $attendance) / $trendMax) * 100),
+            ];
+        })->values();
+
+        $studentFocusRows = $enrollmentAnalytics
+            ->sortBy(fn ($row) => [
+                $row['status'] === 'Needs Attention' ? 0 : ($row['status'] === 'On Track' ? 1 : 2),
+                $row['progress_percent'],
+                $row['attendance_rate'],
+                strtotime((string) ($row['last_activity'] ?? '1970-01-01')),
+            ])
+            ->take(8)
+            ->values()
+            ->map(fn ($row) => [
+                'student_name' => $row['student_name'],
+                'course_title' => $row['course_title'],
+                'progress_percent' => $row['progress_percent'],
+                'attendance_rate' => $row['attendance_rate'],
+                'last_activity' => $row['last_activity'],
+                'status' => $row['status'],
+            ]);
+
+        return [
+            'overview' => [
+                'active_learners' => $states->pluck('user_id')->unique()->count(),
+                'consistent_rate' => $consistentRate,
+                'avg_progress' => (int) round($enrollmentAnalytics->avg('progress_percent') ?? 0),
+                'attendance_rate' => $attendanceRateTotal,
+                'pop_quiz_mastery' => $popQuizMastery,
+                'qa_answer_rate' => $qaAnswerRate,
+            ],
+            'weekly_rows' => $weeklyRows,
+            'course_health_rows' => $courseHealthRows,
+            'student_focus_rows' => $studentFocusRows,
+        ];
+    }
+
     private function forgetDashboardCaches(?int $dosenId = null): void
     {
         if ($dosenId !== null) {
@@ -435,6 +670,8 @@ class DosenDashboardController extends Controller
             ];
 
             $canManageFrontendCraft = (($frontendCraftContent->updated_by ?? null) === $dosenId);
+            $managedCourseMeta = $this->buildManagedCourseMeta($courses, $frontendCraftContent, $canManageFrontendCraft, $dosenId);
+            $progressAnalytics = $this->buildDosenProgressAnalytics($managedCourseMeta, $dosenId);
 
             return compact(
                 'stats',
@@ -451,7 +688,8 @@ class DosenDashboardController extends Controller
                 'frontendCraftContent',
                 'frontendCraftSyllabusText',
                 'courseInfoData',
-                'canManageFrontendCraft'
+                'canManageFrontendCraft',
+                'progressAnalytics'
             );
         });
 
@@ -477,7 +715,12 @@ class DosenDashboardController extends Controller
             ]);
         }
 
-        return view('dosen.dashboard', compact('stats', 'avgScore', 'courses', 'submissions', 'questionBankRows', 'questionBankPresentation', 'analytics', 'qaInbox', 'attendanceStats', 'attendanceRecords', 'courseInfoRows', 'frontendCraftContent', 'frontendCraftSyllabusText', 'courseInfoData', 'manageableCourses'));
+        $progressOverview = $progressAnalytics['overview'] ?? [];
+        $progressWeeklyRows = $progressAnalytics['weekly_rows'] ?? [];
+        $progressCourseHealthRows = $progressAnalytics['course_health_rows'] ?? [];
+        $progressStudentFocusRows = $progressAnalytics['student_focus_rows'] ?? [];
+
+        return view('dosen.dashboard', compact('stats', 'avgScore', 'courses', 'submissions', 'questionBankRows', 'questionBankPresentation', 'analytics', 'qaInbox', 'attendanceStats', 'attendanceRecords', 'courseInfoRows', 'frontendCraftContent', 'frontendCraftSyllabusText', 'courseInfoData', 'manageableCourses', 'progressAnalytics', 'progressOverview', 'progressWeeklyRows', 'progressCourseHealthRows', 'progressStudentFocusRows'));
     }
 
     public function storeCourse(Request $request): RedirectResponse

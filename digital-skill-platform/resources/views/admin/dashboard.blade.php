@@ -977,80 +977,47 @@
             <div class="card" style="margin-top: 12px;">
                 <h3>Question Bank Tersimpan</h3>
                 <p class="muted">Bank soal sekarang dirapikan per item supaya lebih mudah discan, cek placement pop quiz, dan hapus soal lama tanpa tenggelam di tabel panjang.</p>
-                @php
-                    $questionBankCollection = collect($questionBankRows);
-                    $questionBankCourseGroups = $questionBankCollection->groupBy(function ($row) {
-                        $courseLabel = $row->quiz_title ?: ($row->course_slug === 'frontend-craft' ? 'Frontend Craft' : \Illuminate\Support\Str::title(str_replace('-', ' ', $row->course_slug)));
-
-                        return $courseLabel.'||'.$row->course_slug;
-                    });
-                @endphp
                 <div class="question-bank-summary">
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankCollection->count() }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['total'] ?? 0 }}</strong>
                         <span class="muted">Total stored questions</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankCollection->where('is_pop_quiz', true)->count() }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['pop_quiz'] ?? 0 }}</strong>
                         <span class="muted">Pop quiz questions</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankCollection->where('question_origin', 'ai')->count() }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['ai'] ?? 0 }}</strong>
                         <span class="muted">AI-generated</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankCollection->where('question_origin', 'manual')->count() }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['manual'] ?? 0 }}</strong>
                         <span class="muted">Manual entries</span>
                     </article>
                 </div>
                 <div class="question-bank-list">
-                    @forelse($questionBankCourseGroups as $courseKey => $courseRows)
-                        @php
-                            [$courseLabel, $courseSlug] = array_pad(explode('||', $courseKey, 2), 2, '');
-                            $chapterGroups = $courseRows->groupBy(function ($row) {
-                                return $row->placement_after_chapter ? 'chapter_'.$row->placement_after_chapter : 'general';
-                            })->sortKeysUsing(function ($left, $right) {
-                                if ($left === 'general') {
-                                    return -1;
-                                }
-
-                                if ($right === 'general') {
-                                    return 1;
-                                }
-
-                                return (int) str_replace('chapter_', '', $left) <=> (int) str_replace('chapter_', '', $right);
-                            });
-                        @endphp
+                    @forelse(($questionBankPresentation['courses'] ?? []) as $courseGroup)
                         <section class="question-bank-course">
                             <div class="question-bank-course-head">
                                 <div>
-                                    <h4>{{ $courseLabel }}</h4>
-                                    <div class="question-bank-course-meta">{{ $courseSlug }} • {{ $courseRows->count() }} questions stored</div>
+                                    <h4>{{ $courseGroup['course_label'] }}</h4>
+                                    <div class="question-bank-course-meta">{{ $courseGroup['course_slug'] }} - {{ $courseGroup['count'] }} questions stored</div>
                                 </div>
-                                <span class="question-bank-count">{{ $courseRows->where('is_pop_quiz', true)->count() }} pop quiz</span>
+                                <span class="question-bank-count">{{ $courseGroup['pop_quiz_count'] }} pop quiz</span>
                             </div>
 
-                            @foreach($chapterGroups as $chapterIndex => $chapterRows)
-                                @php
-                                    $chapterKey = $chapterIndex;
-                                @endphp
-                                <details class="question-bank-chapter-toggle" {{ $loop->first ? 'open' : '' }}>
+                            @foreach($courseGroup['chapters'] as $chapterIndex => $chapterGroup)
+                                <details class="question-bank-chapter-toggle" {{ $chapterIndex === 0 ? 'open' : '' }}>
                                     <summary>
                                         <div class="question-bank-chapter-head">
-                                            <h5>
-                                                @if($chapterKey === 'general')
-                                                    General Bank
-                                                @else
-                                                    Chapter {{ (int) str_replace('chapter_', '', $chapterKey) }}
-                                                @endif
-                                            </h5>
-                                            <span class="question-bank-count">{{ $chapterRows->count() }} questions</span>
+                                            <h5>{{ $chapterGroup['label'] }}</h5>
+                                            <span class="question-bank-count">{{ $chapterGroup['count'] }} questions</span>
                                         </div>
                                     </summary>
 
                                     <div class="question-bank-chapter-group">
                                         <div class="question-bank-list">
-                                            @foreach($chapterRows as $row)
+                                            @foreach($chapterGroup['rows'] as $row)
                                                 <article class="question-bank-item">
                                                     <div class="question-bank-header">
                                                         <div>
@@ -1192,8 +1159,146 @@
 
         <section class="panel view" id="ai-analytics">
             <h2>AI Dashboard & Analytics</h2>
-            <p class="muted">Token monitor, learning analytics, feedback logs.</p>
+            <p class="muted">Pantau kesehatan belajar platform, konsistensi pengguna, dan performa dosen dalam satu pusat analitik.</p>
+
             <div class="cards-3">
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['active_learners'] ?? 0 }}</strong>
+                    <span class="muted">Active learners</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['consistent_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Consistent mode adoption</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['avg_progress'] ?? 0 }}%</strong>
+                    <span class="muted">Average chapter progress</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['attendance_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Attendance success rate</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['pop_quiz_mastery'] ?? 0 }}%</strong>
+                    <span class="muted">Pop quiz mastery</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $platformOverview['qa_answer_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Q&amp;A response coverage</span>
+                </article>
+            </div>
+
+            <div class="cards-2" style="margin-top:12px;">
+                <article class="card">
+                    <h3>7-Day Learning Momentum</h3>
+                    <p class="muted">Gabungan penyelesaian chapter dan attendance counted di seluruh platform selama 7 hari terakhir.</p>
+                    <div class="analytics-bars">
+                        @if(!empty($platformWeeklyRows))
+                            @foreach($platformWeeklyRows as $row)
+                                <div class="bar">
+                                    <div style="width: {{ max(14, $row['width']) }}%;">
+                                        {{ $row['label'] }} - {{ $row['completions'] }} chapter selesai / {{ $row['attendance'] }} attendance counted
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="muted">Belum ada momentum belajar yang bisa dianalisis.</p>
+                        @endif
+                    </div>
+                </article>
+
+                <article class="card">
+                    <h3>Learning Category Snapshot</h3>
+                    <p class="muted">Kategori dengan aktivitas submission tertinggi untuk membaca demand materi yang paling aktif.</p>
+                    <div class="analytics-bars">
+                        @forelse($learningAnalytics as $row)
+                            <div class="bar">
+                                <div style="width: {{ min(100, $row->total * 10) }}%;">{{ $row->category }} - {{ $row->total }} activities</div>
+                            </div>
+                        @empty
+                            <p class="muted">Belum ada category activity.</p>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+                <h3>Course Health Radar</h3>
+                <p class="muted">Lihat course mana yang paling sehat, mana yang progresnya seret, dan di mana Q&amp;A mulai menumpuk.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Mentor</th>
+                            <th>Students</th>
+                            <th>Avg Progress</th>
+                            <th>Attendance</th>
+                            <th>Pop Quiz Mastery</th>
+                            <th>Open Q&amp;A</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if(!empty($platformCourseHealthRows))
+                            @foreach($platformCourseHealthRows as $row)
+                                <tr>
+                                    <td>{{ $row['course_title'] }}</td>
+                                    <td>{{ $row['mentor_name'] }}</td>
+                                    <td>{{ $row['enrolled_students'] }}</td>
+                                    <td>{{ $row['avg_progress'] }}%</td>
+                                    <td>{{ $row['attendance_rate'] }}%</td>
+                                    <td>{{ $row['pop_quiz_mastery'] }}%</td>
+                                    <td>{{ $row['open_questions'] }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr><td colspan="7">Belum ada course health data.</td></tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+                <h3>Dosen Analytics</h3>
+                <p class="muted">Admin bisa langsung melihat dosen mana yang paling aktif, siapa yang butuh support, dan bagaimana kesehatan siswa di bawah mereka.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Mentor</th>
+                            <th>Courses</th>
+                            <th>Active Learners</th>
+                            <th>Avg Progress</th>
+                            <th>Attendance</th>
+                            <th>Q&amp;A Response</th>
+                            <th>Pop Quiz Mastery</th>
+                            <th>Needs Attention</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if(!empty($platformDosenRows))
+                            @foreach($platformDosenRows as $row)
+                                <tr>
+                                    <td>{{ $row['mentor_name'] }}</td>
+                                    <td>{{ $row['course_count'] }}</td>
+                                    <td>{{ $row['active_learners'] }}</td>
+                                    <td>{{ $row['avg_progress'] }}%</td>
+                                    <td>{{ $row['attendance_rate'] }}%</td>
+                                    <td>{{ $row['qa_answer_rate'] }}%</td>
+                                    <td>{{ $row['pop_quiz_mastery'] }}%</td>
+                                    <td>{{ $row['needs_attention'] }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr><td colspan="8">Belum ada data dosen analytics.</td></tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="cards-2" style="margin-top:12px;">
                 <article class="card">
                     <h3>AI Token Monitor</h3>
                     <p class="muted">Total token: {{ number_format($tokenSummary->total_tokens ?? 0) }}</p>
@@ -1217,20 +1322,8 @@
                 </article>
 
                 <article class="card">
-                    <h3>Learning Analytics</h3>
-                    <div class="analytics-bars">
-                        @forelse($learningAnalytics as $row)
-                            <div class="bar">
-                                <div style="width: {{ min(100, $row->total * 10) }}%;">{{ $row->category }} - {{ $row->total }} activities</div>
-                            </div>
-                        @empty
-                            <p class="muted">Belum ada data analytics.</p>
-                        @endforelse
-                    </div>
-                </article>
-
-                <article class="card">
                     <h3>AI Feedback Logs</h3>
+                    <p class="muted">Gunakan ini untuk membaca tone dan kebutuhan user yang sering muncul di interaksi AI.</p>
                     <div class="table-wrap">
                         <table style="min-width: 100%;">
                             <thead><tr><th>Summary</th><th>Topic</th><th>Sentiment</th></tr></thead>

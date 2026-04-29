@@ -201,6 +201,12 @@
             gap: 12px;
         }
 
+        .cards-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
         .card {
             border: 1px solid var(--line);
             border-radius: 12px;
@@ -496,6 +502,18 @@
 
         th { color: #bdd0f4; }
 
+        .status {
+            display: inline-flex;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            font-size: 12px;
+        }
+
+        .status.active { border-color: rgba(73, 214, 139, 0.45); color: #9aefbf; }
+        .status.suspended { border-color: rgba(255, 107, 125, 0.45); color: #ffb5be; }
+        .status.info { border-color: rgba(69, 208, 255, 0.45); color: #bfeeff; }
+
         .analytics-bars { display: grid; gap: 8px; }
 
         .bar {
@@ -524,6 +542,7 @@
         @media (max-width: 1180px) {
             .kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .cards-2 { grid-template-columns: 1fr; }
+            .cards-3 { grid-template-columns: 1fr; }
             .question-bank-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
@@ -1059,15 +1078,143 @@
 
         <section class="panel view" id="analytics">
             <h2>Analytics</h2>
-            <p class="muted">Kategori course dengan aktivitas submission tertinggi.</p>
-            <div class="analytics-bars">
-                @forelse($analytics as $item)
-                    <div class="bar">
-                        <div style="width: {{ min(100, $item->total * 12) }}%;">{{ $item->category }} - {{ $item->total }} submissions</div>
+            <p class="muted">Pantau konsistensi belajar siswa, kekuatan tiap course, dan siapa yang perlu kamu bantu lebih cepat.</p>
+
+            <div class="cards-3">
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['active_learners'] ?? 0 }}</strong>
+                    <span class="muted">Active learners</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['consistent_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Consistent mode adoption</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['avg_progress'] ?? 0 }}%</strong>
+                    <span class="muted">Average chapter progress</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['attendance_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Attendance success rate</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['pop_quiz_mastery'] ?? 0 }}%</strong>
+                    <span class="muted">Pop quiz mastery</span>
+                </article>
+                <article class="card">
+                    <strong style="display:block;font-size:22px;">{{ $progressOverview['qa_answer_rate'] ?? 0 }}%</strong>
+                    <span class="muted">Q&amp;A response coverage</span>
+                </article>
+            </div>
+
+            <div class="cards-2" style="margin-top:12px;">
+                <article class="card">
+                    <h3>7-Day Learning Momentum</h3>
+                    <p class="muted">Kombinasi penyelesaian chapter dan attendance counted dalam 7 hari terakhir.</p>
+                    <div class="analytics-bars">
+                        @if(!empty($progressWeeklyRows))
+                            @foreach($progressWeeklyRows as $row)
+                                <div class="bar">
+                                    <div style="width: {{ max(14, $row['width']) }}%;">
+                                        {{ $row['label'] }} - {{ $row['completions'] }} chapter selesai / {{ $row['attendance'] }} attendance counted
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="muted">Belum ada momentum belajar yang bisa dianalisis.</p>
+                        @endif
                     </div>
-                @empty
-                    <p class="muted">Belum ada data analytics.</p>
-                @endforelse
+                </article>
+
+                <article class="card">
+                    <h3>Category Activity Snapshot</h3>
+                    <p class="muted">Kategori course dengan aktivitas submission tertinggi dari siswa kamu.</p>
+                    <div class="analytics-bars">
+                        @forelse($analytics as $item)
+                            <div class="bar">
+                                <div style="width: {{ min(100, $item->total * 12) }}%;">{{ $item->category }} - {{ $item->total }} submissions</div>
+                            </div>
+                        @empty
+                            <p class="muted">Belum ada activity snapshot.</p>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+                <h3>Course Health Radar</h3>
+                <p class="muted">Ringkasan health tiap course yang kamu pegang, mulai dari progress sampai Q&amp;A yang masih terbuka.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Students</th>
+                            <th>Consistent Mode</th>
+                            <th>Avg Progress</th>
+                            <th>Attendance</th>
+                            <th>Pop Quiz Mastery</th>
+                            <th>Open Q&amp;A</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if(!empty($progressCourseHealthRows))
+                            @foreach($progressCourseHealthRows as $row)
+                                <tr>
+                                    <td>{{ $row['course_title'] }}</td>
+                                    <td>{{ $row['enrolled_students'] }}</td>
+                                    <td>{{ $row['consistent_users'] }}</td>
+                                    <td>{{ $row['avg_progress'] }}%</td>
+                                    <td>{{ $row['attendance_rate'] }}%</td>
+                                    <td>{{ $row['pop_quiz_mastery'] }}%</td>
+                                    <td>{{ $row['open_questions'] }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr><td colspan="7">Belum ada data health course.</td></tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+                <h3>Students To Watch</h3>
+                <p class="muted">Daftar siswa yang paling butuh intervensi cepat, plus siapa yang sudah berjalan kuat.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Progress</th>
+                            <th>Attendance</th>
+                            <th>Last Activity</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if(!empty($progressStudentFocusRows))
+                            @foreach($progressStudentFocusRows as $row)
+                                <tr>
+                                    <td>{{ $row['student_name'] }}</td>
+                                    <td>{{ $row['course_title'] }}</td>
+                                    <td>{{ $row['progress_percent'] }}%</td>
+                                    <td>{{ $row['attendance_rate'] }}%</td>
+                                    <td>{{ $row['last_activity'] ? \Illuminate\Support\Carbon::parse($row['last_activity'])->format('d M Y H:i') : 'Belum ada aktivitas' }}</td>
+                                    <td>
+                                        <span class="status {{ $row['status'] === 'Strong' ? 'active' : ($row['status'] === 'Needs Attention' ? 'suspended' : 'info') }}">
+                                            {{ $row['status'] }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr><td colspan="6">Belum ada data siswa yang bisa dipantau.</td></tr>
+                        @endif
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
