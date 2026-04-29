@@ -282,6 +282,115 @@
             gap: 10px;
         }
 
+        .question-bank-course {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(9, 15, 28, 0.74);
+            padding: 14px;
+        }
+
+        .question-bank-course-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .question-bank-course-head h4 {
+            margin: 0;
+            font-size: 18px;
+            color: #f3f7ff;
+        }
+
+        .question-bank-course-meta {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .question-bank-chapter-group {
+            border-top: 1px solid rgba(154, 178, 225, 0.14);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .question-bank-chapter-group:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        .question-bank-chapter-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .question-bank-chapter-head h5 {
+            margin: 0;
+            font-size: 14px;
+            color: #dfeeff;
+            letter-spacing: 0.2px;
+        }
+
+        .question-bank-chapter-toggle {
+            border-top: 1px solid rgba(154, 178, 225, 0.14);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .question-bank-chapter-toggle:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        .question-bank-chapter-toggle > summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .question-bank-chapter-toggle > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .question-bank-chapter-toggle > summary .question-bank-chapter-head::after {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            color: #dff1ff;
+            background: rgba(12, 19, 35, 0.8);
+            font-size: 15px;
+            font-weight: 700;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .question-bank-chapter-toggle[open] > summary .question-bank-chapter-head::after {
+            content: '-';
+        }
+
+        .question-bank-count {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            color: #cfe0ff;
+            background: rgba(14, 24, 44, 0.65);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
         .question-bank-item {
             border: 1px solid var(--line);
             border-radius: 14px;
@@ -754,64 +863,83 @@
             <div class="card" style="margin-top: 12px;">
                 <h3>Question Bank Tersimpan</h3>
                 <p class="muted">Semua soal yang kamu buat atau generate dari AI terkumpul di sini, jadi lebih gampang cek mana pop quiz, mana soal reguler, lalu hapus yang sudah tidak dipakai.</p>
-                @php
-                    $questionBankCollection = collect($questionBankRows);
-                    $questionBankTotal = $questionBankCollection->count();
-                    $questionBankPop = $questionBankCollection->where('is_pop_quiz', true)->count();
-                    $questionBankAi = $questionBankCollection->where('question_origin', 'ai')->count();
-                    $questionBankManual = $questionBankCollection->where('question_origin', 'manual')->count();
-                @endphp
                 <div class="question-bank-summary">
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankTotal }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['total'] ?? 0 }}</strong>
                         <span class="muted">Total stored questions</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankPop }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['pop_quiz'] ?? 0 }}</strong>
                         <span class="muted">Pop quiz questions</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankAi }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['ai'] ?? 0 }}</strong>
                         <span class="muted">AI-generated</span>
                     </article>
                     <article class="question-bank-metric">
-                        <strong>{{ $questionBankManual }}</strong>
+                        <strong>{{ $questionBankPresentation['summary']['manual'] ?? 0 }}</strong>
                         <span class="muted">Manual entries</span>
                     </article>
                 </div>
                 <div class="question-bank-list">
-                    @forelse($questionBankRows as $row)
-                        <article class="question-bank-item">
-                            <div class="question-bank-header">
+                    @forelse(($questionBankPresentation['courses'] ?? []) as $courseGroup)
+                        <section class="question-bank-course">
+                            <div class="question-bank-course-head">
                                 <div>
-                                    <h4 class="question-bank-title">{{ $row->quiz_title ?: ($row->course_slug === 'frontend-craft' ? 'Frontend Craft' : $row->course_slug) }}</h4>
-                                    <div class="question-bank-tags">
-                                        <span class="question-tag">{{ strtoupper($row->question_type) }}</span>
-                                        <span class="question-tag">{{ ucfirst($row->difficulty) }}</span>
-                                        <span class="question-tag {{ $row->question_origin === 'ai' ? 'ai' : '' }}">{{ strtoupper($row->question_origin) }}</span>
-                                        @if($row->is_pop_quiz && $row->placement_after_chapter)
-                                            <span class="question-tag pop">Pop quiz after chapter {{ $row->placement_after_chapter }}</span>
-                                        @elseif($row->placement_after_chapter)
-                                            <span class="question-tag">After chapter {{ $row->placement_after_chapter }}</span>
-                                        @else
-                                            <span class="question-tag">General bank</span>
-                                        @endif
+                                    <h4>{{ $courseGroup['course_label'] }}</h4>
+                                    <div class="question-bank-course-meta">{{ $courseGroup['course_slug'] }} - {{ $courseGroup['count'] }} questions stored</div>
+                                </div>
+                                <span class="question-bank-count">{{ $courseGroup['pop_quiz_count'] }} pop quiz</span>
+                            </div>
+
+                            @foreach($courseGroup['chapters'] as $chapterIndex => $chapterGroup)
+                                <details class="question-bank-chapter-toggle" {{ $chapterIndex === 0 ? 'open' : '' }}>
+                                    <summary>
+                                        <div class="question-bank-chapter-head">
+                                            <h5>{{ $chapterGroup['label'] }}</h5>
+                                            <span class="question-bank-count">{{ $chapterGroup['count'] }} questions</span>
+                                        </div>
+                                    </summary>
+                                    <div class="question-bank-chapter-group">
+                                        <div class="question-bank-list">
+                                            @foreach($chapterGroup['rows'] as $row)
+                                                <article class="question-bank-item">
+                                                    <div class="question-bank-header">
+                                                        <div>
+                                                            <h4 class="question-bank-title">{{ \Illuminate\Support\Str::limit($row->question_text, 68) }}</h4>
+                                                            <div class="question-bank-tags">
+                                                                <span class="question-tag">{{ strtoupper($row->question_type) }}</span>
+                                                                <span class="question-tag">{{ ucfirst($row->difficulty) }}</span>
+                                                                <span class="question-tag {{ $row->question_origin === 'ai' ? 'ai' : '' }}">{{ strtoupper($row->question_origin) }}</span>
+                                                                @if($row->is_pop_quiz && $row->placement_after_chapter)
+                                                                    <span class="question-tag pop">Pop quiz gate</span>
+                                                                @elseif($row->placement_after_chapter)
+                                                                    <span class="question-tag">Lesson checkpoint</span>
+                                                                @else
+                                                                    <span class="question-tag">Reusable</span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                        <div class="question-bank-actions">
+                                                            <form action="{{ route('dosen.questions.delete', $row->id) }}" method="POST">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button class="btn btn-danger" type="submit">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                    <p class="question-bank-text">{{ \Illuminate\Support\Str::limit($row->question_text, 180) }}</p>
+                                                    <div class="question-bank-meta">
+                                                        <span class="muted">Created by {{ auth()->user()->name }}</span>
+                                                        <span class="muted">{{ \Illuminate\Support\Carbon::parse($row->created_at)->format('d M Y H:i') }}</span>
+                                                    </div>
+                                                </article>
+                                            @endforeach
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="question-bank-actions">
-                                    <form action="{{ route('dosen.questions.delete', $row->id) }}" method="POST">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-danger" type="submit">Delete</button>
-                                    </form>
-                                </div>
-                            </div>
-                            <p class="question-bank-text">{{ \Illuminate\Support\Str::limit($row->question_text, 180) }}</p>
-                            <div class="question-bank-meta">
-                                <span class="muted">Created by {{ auth()->user()->name }}</span>
-                                <span class="muted">{{ \Illuminate\Support\Carbon::parse($row->created_at)->format('d M Y H:i') }}</span>
-                            </div>
-                        </article>
+                                </details>
+                            @endforeach
+                        </section>
                     @empty
                         <div class="question-bank-empty">Question bank masih kosong. Tambah soal manual atau generate dari AI dulu, nanti semuanya akan terkumpul rapi di sini.</div>
                     @endforelse
@@ -1068,4 +1196,5 @@
 </script>
 </body>
 </html>
+
 

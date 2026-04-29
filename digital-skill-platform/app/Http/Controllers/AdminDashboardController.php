@@ -41,6 +41,74 @@ class AdminDashboardController extends Controller
             ->implode("\n");
     }
 
+    private function formatQuestionBankCourseLabel(object $row): string
+    {
+        if (!empty($row->quiz_title)) {
+            return $row->quiz_title;
+        }
+
+        if (($row->course_slug ?? null) === 'frontend-craft') {
+            return 'Frontend Craft';
+        }
+
+        return Str::title(str_replace('-', ' ', (string) ($row->course_slug ?? 'unknown-course')));
+    }
+
+    private function buildQuestionBankPresentation($questionBankRows): array
+    {
+        $collection = collect($questionBankRows);
+
+        $groupedCourses = $collection
+            ->groupBy(fn ($row) => $this->formatQuestionBankCourseLabel($row).'||'.$row->course_slug)
+            ->map(function ($courseRows, $courseKey) {
+                [$courseLabel, $courseSlug] = array_pad(explode('||', (string) $courseKey, 2), 2, '');
+
+                $chapterGroups = $courseRows
+                    ->groupBy(fn ($row) => $row->placement_after_chapter ? 'chapter_'.$row->placement_after_chapter : 'general')
+                    ->sortKeysUsing(function ($left, $right) {
+                        if ($left === 'general') {
+                            return -1;
+                        }
+
+                        if ($right === 'general') {
+                            return 1;
+                        }
+
+                        return (int) str_replace('chapter_', '', (string) $left) <=> (int) str_replace('chapter_', '', (string) $right);
+                    })
+                    ->map(function ($chapterRows, $chapterKey) {
+                        return [
+                            'key' => $chapterKey,
+                            'label' => $chapterKey === 'general'
+                                ? 'General Bank'
+                                : 'Chapter '.(int) str_replace('chapter_', '', (string) $chapterKey),
+                            'count' => $chapterRows->count(),
+                            'rows' => $chapterRows->values(),
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'course_label' => $courseLabel,
+                    'course_slug' => $courseSlug,
+                    'count' => $courseRows->count(),
+                    'pop_quiz_count' => $courseRows->where('is_pop_quiz', true)->count(),
+                    'chapters' => $chapterGroups,
+                ];
+            })
+            ->values();
+
+        return [
+            'summary' => [
+                'total' => $collection->count(),
+                'pop_quiz' => $collection->where('is_pop_quiz', true)->count(),
+                'ai' => $collection->where('question_origin', 'ai')->count(),
+                'manual' => $collection->where('question_origin', 'manual')->count(),
+            ],
+            'courses' => $groupedCourses,
+        ];
+    }
+
     private function forgetDashboardCaches(): void
     {
         Cache::forget($this->dashboardCacheKey());
@@ -286,6 +354,7 @@ class AdminDashboardController extends Controller
                 ->orderByDesc('qb.created_at')
                 ->limit(30)
                 ->get();
+            $questionBankPresentation = $this->buildQuestionBankPresentation($questionBankRows);
 
             $learningAnalytics = DB::table('quiz_submissions as s')
                 ->join('quizzes as q', 'q.id', '=', 's.quiz_id')
@@ -386,6 +455,7 @@ class AdminDashboardController extends Controller
                 'categories',
                 'submissions',
                 'questionBankRows',
+                'questionBankPresentation',
                 'learningAnalytics',
                 'tokenLogs',
                 'tokenSummary',
@@ -431,6 +501,7 @@ class AdminDashboardController extends Controller
             'categories',
             'submissions',
             'questionBankRows',
+            'questionBankPresentation',
             'learningAnalytics',
             'tokenLogs',
             'tokenSummary',
