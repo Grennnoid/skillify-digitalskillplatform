@@ -100,6 +100,7 @@
             padding: 7px 5px;
             display: inline-flex;
             align-items: center;
+            gap: 6px;
         }
 
         .courses-trigger:hover,
@@ -167,9 +168,23 @@
             padding: 7px 5px;
             display: inline-flex;
             align-items: center;
+            gap: 6px;
         }
 
         .my-courses-trigger:hover { color: #ffffff; }
+
+        .my-courses-trigger::after,
+        .mentors-trigger::after,
+        .progress-trigger::after,
+        .home-trigger::after {
+            content: "";
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid currentColor;
+            opacity: 0.8;
+        }
 
         .my-courses-dropdown {
             position: absolute;
@@ -217,6 +232,7 @@
             padding: 7px 5px;
             display: inline-flex;
             align-items: center;
+            gap: 6px;
         }
 
         .mentors-trigger:hover { color: #ffffff; }
@@ -257,6 +273,21 @@
         .profile-menu {
             position: relative;
             margin-left: 2px;
+        }
+
+        .profile-menu::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            bottom: 5px;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #d4e3ff;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+            pointer-events: none;
+            z-index: 2;
         }
 
         .profile-trigger {
@@ -853,6 +884,4 @@
 @include('partials.student-chatbot')
 </body>
 </html>
-
-
 

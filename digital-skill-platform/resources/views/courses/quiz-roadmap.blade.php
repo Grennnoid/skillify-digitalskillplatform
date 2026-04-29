@@ -122,6 +122,21 @@
             margin-left: 2px;
         }
 
+        .profile-menu::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            bottom: 3px;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #d4e3ff;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+            pointer-events: none;
+            z-index: 2;
+        }
+
         .profile-trigger {
             width: 44px;
             height: 44px;

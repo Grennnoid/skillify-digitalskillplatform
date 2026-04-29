@@ -74,6 +74,15 @@
             outline: none;
         }
 
+        select {
+            appearance: none;
+            padding-right: 38px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23d4e3ff' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 12px 8px;
+        }
+
         input:focus, select:focus {
             border-color: rgba(69, 208, 255, 0.72);
             box-shadow: 0 0 0 3px rgba(69, 208, 255, 0.15);
