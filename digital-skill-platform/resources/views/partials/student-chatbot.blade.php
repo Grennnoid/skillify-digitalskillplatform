@@ -361,6 +361,59 @@
             border-radius: 22px;
         }
     }
+
+    @media (max-width: 520px) {
+        .skillify-chatbot {
+            right: 10px;
+            bottom: 10px;
+        }
+
+        .skillify-chatbot__panel {
+            width: calc(100vw - 20px);
+            height: min(74vh, calc(100vh - 28px));
+            right: 0;
+            bottom: 72px;
+            border-radius: 18px;
+        }
+
+        .skillify-chatbot__header,
+        .skillify-chatbot__composer {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .skillify-chatbot__messages {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .skillify-chatbot__actions {
+            gap: 6px;
+        }
+
+        .skillify-chatbot__ghost-btn {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .skillify-chatbot__form {
+            gap: 8px;
+        }
+
+        .skillify-chatbot__send {
+            min-width: 68px;
+            height: 44px;
+        }
+
+        .skillify-chatbot__footer-row {
+            flex-wrap: wrap;
+        }
+
+        .skillify-chatbot__hint,
+        .skillify-chatbot__counter {
+            width: 100%;
+        }
+    }
 </style>
 
 <div class="skillify-chatbot" id="skillifyChatbot">

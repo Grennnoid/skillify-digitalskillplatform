@@ -164,13 +164,49 @@
         .item span { color: var(--muted); font-size: 18px; }
 
         @media (max-width: 760px) {
+            .container {
+                width: min(100%, calc(100vw - 24px));
+                padding-top: 18px;
+            }
+
+            .top {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
             .profile {
                 flex-direction: column;
                 align-items: flex-start;
             }
+
+            .profile,
+            .courses {
+                padding: 16px;
+            }
+
             .muted { font-size: 18px; }
             .item strong { font-size: 19px; }
             .item span { font-size: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: min(100%, calc(100vw - 18px));
+                padding-top: 14px;
+            }
+
+            .brand {
+                font-size: 22px;
+            }
+
+            .avatar {
+                width: 88px;
+                height: 88px;
+            }
+
+            .muted {
+                font-size: 16px;
+            }
         }
     </style>
 </head>

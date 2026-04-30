@@ -132,6 +132,27 @@
             font-size: 12px;
             text-align: center;
         }
+
+        @media (max-width: 560px) {
+            body {
+                place-items: start;
+                padding: 16px;
+            }
+
+            .card {
+                border-radius: 16px;
+                padding: 22px 18px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            p {
+                margin-bottom: 18px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>

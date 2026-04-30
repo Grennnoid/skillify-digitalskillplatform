@@ -92,6 +92,36 @@
             color: #041220;
             background: linear-gradient(120deg, var(--primary), var(--primary-2));
         }
+
+        @media (max-width: 560px) {
+            body {
+                place-items: start;
+                padding: 16px;
+            }
+
+            .card {
+                border-radius: 16px;
+                padding: 22px 18px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            p,
+            .note {
+                font-size: 14px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn,
+            .actions form {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>

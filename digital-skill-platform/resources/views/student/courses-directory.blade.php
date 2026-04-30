@@ -181,6 +181,73 @@
             padding: 14px;
             color: var(--muted);
         }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100%, calc(100vw - 28px));
+                padding: 18px 0 24px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+                margin-bottom: 16px;
+            }
+
+            .brand {
+                font-size: 20px;
+            }
+
+            .back {
+                width: 100%;
+                text-align: center;
+            }
+
+            .hero {
+                padding: 16px;
+                border-radius: 16px;
+            }
+
+            .search {
+                flex-direction: column;
+            }
+
+            .search input {
+                min-width: 0;
+            }
+
+            .search button {
+                width: 100%;
+            }
+
+            .grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .card {
+                min-height: 280px;
+                height: auto;
+            }
+
+            .content h3 {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: min(100%, calc(100vw - 20px));
+                padding-top: 14px;
+            }
+
+            .hero h1 {
+                font-size: 24px;
+            }
+
+            .content h3 {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>

@@ -227,6 +227,61 @@
             resize: vertical;
             font-family: inherit;
         }
+
+        @media (max-width: 760px) {
+            .wrap {
+                width: min(100%, calc(100vw - 24px));
+                padding: 16px 0 28px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .top-actions {
+                width: 100%;
+            }
+
+            .top-actions .chip,
+            .top-actions .submit-btn {
+                flex: 1 1 100%;
+                text-align: center;
+            }
+
+            .hero,
+            .card,
+            .topbar {
+                border-radius: 16px;
+            }
+
+            .hero,
+            .card {
+                padding: 14px;
+            }
+
+            .question {
+                padding: 12px;
+            }
+
+            .question-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 26px;
+            }
+
+            .badge {
+                width: 100%;
+                justify-content: center;
+                text-align: center;
+                line-height: 1.5;
+            }
+        }
     </style>
 </head>
 <body>
