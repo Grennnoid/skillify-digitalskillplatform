@@ -816,6 +816,347 @@ class StudentCourseController extends Controller
         return $query->get();
     }
 
+    private function pathfinderProfile(): ?object
+    {
+        return DB::table('user_learning_profiles')
+            ->where('user_id', auth()->id())
+            ->first();
+    }
+
+    private function pathfinderDiscoverySignals(): array
+    {
+        $locale = app()->getLocale();
+
+        return [
+            'builder' => [
+                'title' => $locale === 'id' ? 'Suka membangun hal yang interaktif' : 'I like building interactive things',
+                'text' => $locale === 'id'
+                    ? 'Website, interface, dan produk digital terasa paling seru saat bisa langsung dibuat.'
+                    : 'Websites, interfaces, and digital products feel most exciting when I can build them directly.',
+                'category_hint' => 'web-development',
+            ],
+            'strategist' => [
+                'title' => $locale === 'id' ? 'Tertarik menyusun arah dan keputusan' : 'I enjoy shaping direction and decisions',
+                'text' => $locale === 'id'
+                    ? 'Saya suka memahami bagaimana bisnis, strategi, dan sistem bergerak.'
+                    : 'I like understanding how business, strategy, and systems move together.',
+                'category_hint' => 'business',
+            ],
+            'promoter' => [
+                'title' => $locale === 'id' ? 'Tertarik membuat sesuatu lebih dikenal' : 'I like helping ideas reach more people',
+                'text' => $locale === 'id'
+                    ? 'Campaign, audience, dan pertumbuhan digital terasa menarik buat saya.'
+                    : 'Campaigns, audience growth, and digital reach are the things I want to understand more.',
+                'category_hint' => 'digital-marketing',
+            ],
+            'designer' => [
+                'title' => $locale === 'id' ? 'Peka pada visual dan komunikasi' : 'I care about visual impact and communication',
+                'text' => $locale === 'id'
+                    ? 'Layout, identitas visual, dan storytelling lewat desain terasa paling natural.'
+                    : 'Layout, visual identity, and storytelling through design feel the most natural to me.',
+                'category_hint' => 'graphic-design',
+            ],
+        ];
+    }
+
+    private function categorySlugForSignal(string $signal): string
+    {
+        return $this->pathfinderDiscoverySignals()[$signal]['category_hint'] ?? 'web-development';
+    }
+
+    private function recommendationCatalog()
+    {
+        $frontendCraftContent = $this->frontendCraftContent();
+
+        $catalog = collect([
+            [
+                'key' => 'frontend-craft',
+                'title' => 'Frontend Craft',
+                'category' => 'Web Development',
+                'difficulty' => 'beginner',
+                'summary' => (string) ($frontendCraftContent->tagline
+                    ?? 'Build interactive and responsive modern websites with practical projects.'),
+                'href' => route('courses.frontend-craft'),
+                'roadmap_href' => route('courses.frontend-craft.roadmap'),
+                'image' => $frontendCraftContent->hero_background_url ?? null,
+            ],
+        ]);
+
+        $quizCourses = DB::table('quizzes as q')
+            ->leftJoin('quiz_course_infos as qi', 'qi.quiz_id', '=', 'q.id')
+            ->select(
+                'q.id',
+                'q.title',
+                'q.category',
+                'q.difficulty',
+                'qi.tagline',
+                'qi.about',
+                'qi.hero_background_url'
+            )
+            ->orderByDesc('q.created_at')
+            ->get();
+
+        foreach ($quizCourses as $course) {
+            $title = trim((string) $course->title);
+            if ($title === '' || Str::slug($title) === 'frontend-craft') {
+                continue;
+            }
+
+            $catalog->push([
+                'key' => 'quiz-'.$course->id,
+                'title' => $title,
+                'category' => trim((string) ($course->category ?: 'General Course')),
+                'difficulty' => trim((string) ($course->difficulty ?: 'beginner')),
+                'summary' => trim((string) ($course->tagline ?: $course->about ?: 'Structured digital learning path with mentor guidance.')),
+                'href' => route('courses.quiz.show', ['quiz' => $course->id]),
+                'roadmap_href' => route('courses.quiz.roadmap', ['quiz' => $course->id]),
+                'image' => $course->hero_background_url,
+            ]);
+        }
+
+        return $catalog->values();
+    }
+
+    private function pathfinderCategoryOptions(): array
+    {
+        $descriptions = [
+            'web-development' => [
+                'en' => 'Build websites, interfaces, and front-end projects.',
+                'id' => 'Bangun website, interface, dan project front-end.',
+            ],
+            'business' => [
+                'en' => 'Learn strategy, operations, and business thinking.',
+                'id' => 'Pelajari strategi, operasional, dan cara pikir bisnis.',
+            ],
+            'digital-marketing' => [
+                'en' => 'Focus on campaigns, audience growth, and digital reach.',
+                'id' => 'Fokus pada campaign, pertumbuhan audiens, dan jangkauan digital.',
+            ],
+            'graphic-design' => [
+                'en' => 'Explore visual communication, layout, and creative tools.',
+                'id' => 'Eksplor komunikasi visual, layout, dan tools kreatif.',
+            ],
+        ];
+
+        $locale = app()->getLocale();
+
+        return $this->recommendationCatalog()
+            ->groupBy(fn ($course) => trim((string) $course['category']))
+            ->map(function ($courses, $category) use ($descriptions, $locale) {
+                $slug = Str::slug((string) $category);
+                $fallbackDescription = $locale === 'id'
+                    ? 'Rekomendasi kursus di area belajar ini.'
+                    : 'Recommended courses in this learning area.';
+
+                return [
+                    'slug' => $slug,
+                    'name' => $category,
+                    'count' => $courses->count(),
+                    'description' => $descriptions[$slug][$locale] ?? $fallbackDescription,
+                ];
+            })
+            ->sortBy('name')
+            ->values()
+            ->all();
+    }
+
+    private function pathfinderAnswers(?object $profile): array
+    {
+        return [
+            'discovery_signal' => (string) ($profile->primary_interest ?? ''),
+            'goal' => (string) ($profile->goal ?? ''),
+            'experience_level' => (string) ($profile->experience_level ?? ''),
+            'study_pace' => (string) ($profile->study_pace ?? ''),
+            'learning_style' => (string) ($profile->learning_style ?? ''),
+        ];
+    }
+
+    private function recommendedCoursesForPathfinder(array $answers)
+    {
+        $signal = trim((string) ($answers['discovery_signal'] ?? ''));
+        $primaryInterest = $this->categorySlugForSignal($signal);
+        $goal = trim((string) ($answers['goal'] ?? ''));
+        $experience = trim((string) ($answers['experience_level'] ?? ''));
+        $pace = trim((string) ($answers['study_pace'] ?? ''));
+        $style = trim((string) ($answers['learning_style'] ?? ''));
+
+        return $this->recommendationCatalog()
+            ->map(function ($course) use ($primaryInterest, $goal, $experience, $pace, $style) {
+                $categorySlug = Str::slug((string) $course['category']);
+                $difficulty = Str::lower((string) $course['difficulty']);
+                $haystack = Str::lower(trim($course['title'].' '.$course['summary'].' '.$course['category']));
+
+                $score = 18;
+                $reasons = [];
+
+                if ($primaryInterest !== '' && $categorySlug === $primaryInterest) {
+                    $score += 60;
+                    $reasons[] = 'interest_match';
+                }
+
+                if ($experience === 'beginner') {
+                    if (in_array($difficulty, ['beginner', 'pemula'], true)) {
+                        $score += 20;
+                        $reasons[] = 'level_match';
+                    } else {
+                        $score += 8;
+                    }
+                } elseif ($experience === 'intermediate') {
+                    if (in_array($difficulty, ['intermediate', 'menengah'], true)) {
+                        $score += 18;
+                        $reasons[] = 'level_match';
+                    } else {
+                        $score += 10;
+                    }
+                } elseif ($experience === 'advanced') {
+                    $score += 8;
+                }
+
+                if ($goal === 'career') {
+                    $score += 10;
+                    $reasons[] = 'goal_match';
+                } elseif ($goal === 'portfolio' && preg_match('/project|build|portfolio|craft|praktik|praktis/', $haystack)) {
+                    $score += 16;
+                    $reasons[] = 'goal_match';
+                } elseif ($goal === 'business' && preg_match('/business|marketing|brand|sales|finance|strategy|startup/', $haystack)) {
+                    $score += 18;
+                    $reasons[] = 'goal_match';
+                } elseif ($goal === 'explore') {
+                    $score += 6;
+                }
+
+                if ($style === 'hands_on' && preg_match('/project|build|practice|practical|portfolio|hands-on|praktik|praktis/', $haystack)) {
+                    $score += 14;
+                    $reasons[] = 'style_match';
+                } elseif ($style === 'guided') {
+                    $score += 8;
+                } elseif ($style === 'theory' && preg_match('/foundation|fundamental|core|strategy|basic|dasar/', $haystack)) {
+                    $score += 12;
+                    $reasons[] = 'style_match';
+                }
+
+                if ($pace === 'light' && in_array($difficulty, ['beginner', 'pemula'], true)) {
+                    $score += 8;
+                } elseif ($pace === 'steady') {
+                    $score += 6;
+                } elseif ($pace === 'intensive' && preg_match('/project|core|advanced|deploy|responsive|javascript/', $haystack)) {
+                    $score += 8;
+                }
+
+                $course['match_score'] = min(98, $score);
+                $course['reasons'] = array_values(array_unique($reasons));
+
+                return $course;
+            })
+            ->sortByDesc('match_score')
+            ->values()
+            ->take(3);
+    }
+
+    private function topRecommendedCourseFromProfile(?object $profile): ?array
+    {
+        if (!$profile || empty($profile->recommendations_json)) {
+            return null;
+        }
+
+        $recommendations = json_decode((string) $profile->recommendations_json, true);
+        if (!is_array($recommendations) || empty($recommendations[0]['key'])) {
+            return null;
+        }
+
+        $topKey = (string) $recommendations[0]['key'];
+        $course = $this->recommendationCatalog()->firstWhere('key', $topKey);
+
+        if (!$course) {
+            return null;
+        }
+
+        $course['match_score'] = (int) ($recommendations[0]['match_score'] ?? ($course['match_score'] ?? 0));
+
+        return $course;
+    }
+
+    public function pathfinder(Request $request): View
+    {
+        $catalog = $this->recommendationCatalog();
+        $profile = $this->pathfinderProfile();
+        $answers = $this->pathfinderAnswers($profile);
+        $recommendations = !empty($profile?->completed_at)
+            ? $this->recommendedCoursesForPathfinder($answers)
+            : collect();
+
+        return view('student.pathfinder', [
+            'showWelcome' => $request->boolean('welcome'),
+            'pathfinderProfile' => $profile,
+            'pathfinderAnswers' => $answers,
+            'pathfinderCategories' => $this->pathfinderCategoryOptions(),
+            'pathfinderSignals' => $this->pathfinderDiscoverySignals(),
+            'pathfinderRecommendations' => $recommendations,
+            'pathfinderCourseCount' => $catalog->count(),
+            'pathfinderTopRecommendation' => $this->topRecommendedCourseFromProfile($profile),
+        ]);
+    }
+
+    public function savePathfinder(Request $request): RedirectResponse
+    {
+        if ($request->input('action') === 'skip') {
+            DB::table('user_learning_profiles')->updateOrInsert(
+                ['user_id' => auth()->id()],
+                [
+                    'skipped_at' => now(),
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+
+            return redirect()->route('student.dashboard')
+                ->with('success', __('ui.pathfinder.skip_success'));
+        }
+
+        $signals = array_keys($this->pathfinderDiscoverySignals());
+
+        $validated = $request->validate([
+            'discovery_signal' => ['required', 'string', 'in:'.implode(',', $signals)],
+            'goal' => ['required', 'string', 'in:career,business,portfolio,explore'],
+            'experience_level' => ['required', 'string', 'in:beginner,intermediate,advanced'],
+            'study_pace' => ['required', 'string', 'in:light,steady,intensive'],
+            'learning_style' => ['required', 'string', 'in:hands_on,guided,theory'],
+        ]);
+
+        $recommendations = $this->recommendedCoursesForPathfinder($validated);
+        $topRecommendation = $recommendations->first();
+
+        DB::table('user_learning_profiles')->updateOrInsert(
+            ['user_id' => auth()->id()],
+            [
+                'primary_interest' => $validated['discovery_signal'],
+                'goal' => $validated['goal'],
+                'experience_level' => $validated['experience_level'],
+                'study_pace' => $validated['study_pace'],
+                'learning_style' => $validated['learning_style'],
+                'recommendations_json' => json_encode(
+                    $recommendations
+                        ->map(fn ($course) => [
+                            'key' => $course['key'],
+                            'title' => $course['title'],
+                            'category' => $course['category'],
+                            'href' => $course['href'],
+                            'match_score' => $course['match_score'],
+                        ])
+                        ->values()
+                        ->all()
+                ),
+                'completed_at' => now(),
+                'skipped_at' => null,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return redirect()->to($topRecommendation['href'] ?? route('student.dashboard'))
+            ->with('success', __('ui.pathfinder.saved_success'));
+    }
+
     public function dashboard(): View|RedirectResponse
     {
         $states = auth()->user()
@@ -873,8 +1214,9 @@ class StudentCourseController extends Controller
 
         $carouselCourses = $this->buildCarouselCourses();
         $mentors = $this->buildMentors();
+        $pathfinderRecommendation = $this->topRecommendedCourseFromProfile($this->pathfinderProfile());
 
-        return view('student.dashboard', compact('enrolledCourses', 'favoriteCourses', 'carouselCourses', 'mentors'));
+        return view('student.dashboard', compact('enrolledCourses', 'favoriteCourses', 'carouselCourses', 'mentors', 'pathfinderRecommendation'));
     }
 
     public function coursesDirectory(Request $request): View
@@ -1122,17 +1464,30 @@ class StudentCourseController extends Controller
         abort_if(!$course, 404);
 
         $slug = $this->quizCourseSlug($quiz);
+        $existing = DB::table('user_course_states')
+            ->where('user_id', auth()->id())
+            ->where('course_slug', $slug)
+            ->first();
 
-        UserCourseState::updateOrCreate(
-            [
+        if ($existing) {
+            DB::table('user_course_states')
+                ->where('id', $existing->id)
+                ->update([
+                    'course_title' => $course->title,
+                    'is_enrolled' => DB::raw('TRUE'),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('user_course_states')->insert([
                 'user_id' => auth()->id(),
                 'course_slug' => $slug,
-            ],
-            [
                 'course_title' => $course->title,
-                'is_enrolled' => true,
-            ]
-        );
+                'is_enrolled' => DB::raw('TRUE'),
+                'is_favorite' => DB::raw('FALSE'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return redirect()->route('courses.quiz.roadmap', ['quiz' => $quiz]);
     }
@@ -1688,17 +2043,30 @@ class StudentCourseController extends Controller
     {
         $course = $this->catalog()[$slug] ?? null;
         abort_if(!$course, 404);
+        $existing = DB::table('user_course_states')
+            ->where('user_id', auth()->id())
+            ->where('course_slug', $slug)
+            ->first();
 
-        UserCourseState::updateOrCreate(
-            [
+        if ($existing) {
+            DB::table('user_course_states')
+                ->where('id', $existing->id)
+                ->update([
+                    'course_title' => $course['title'],
+                    'is_enrolled' => DB::raw('TRUE'),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('user_course_states')->insert([
                 'user_id' => auth()->id(),
                 'course_slug' => $slug,
-            ],
-            [
                 'course_title' => $course['title'],
-                'is_enrolled' => true,
-            ]
-        );
+                'is_enrolled' => DB::raw('TRUE'),
+                'is_favorite' => DB::raw('FALSE'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return redirect()->route($course['roadmap_route']);
     }

@@ -691,6 +691,70 @@
             line-height: 1.6;
         }
 
+        .recommendation-panel {
+            display: grid;
+            gap: 12px;
+        }
+
+        .recommendation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(121, 240, 212, 0.28);
+            background: rgba(12, 29, 39, 0.38);
+            color: #dffff8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .recommendation-badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: linear-gradient(120deg, #67d7ff, #79f0d4);
+            box-shadow: 0 0 10px rgba(103, 215, 255, 0.7);
+        }
+
+        .recommendation-title {
+            margin: 0;
+            font-size: 26px;
+            line-height: 1.08;
+            letter-spacing: -0.3px;
+        }
+
+        .recommendation-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .recommendation-actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .recommendation-primary {
+            color: #041220;
+            background: linear-gradient(120deg, #67d7ff, #79f0d4);
+        }
+
+        .recommendation-secondary {
+            color: #d8e5ff;
+            border: 1px solid var(--line);
+            background: rgba(9, 15, 29, 0.78);
+        }
+
         .course-list {
             margin: 0;
             padding-left: 18px;
@@ -787,6 +851,7 @@
             font-size: 13px;
             text-align: center;
         }
+
     </style>
 </head>
 <body>
@@ -956,6 +1021,20 @@
             <h4>{{ __('ui.student.weekly_focus_title') }}</h4>
             <p>{{ __('ui.student.weekly_focus_text') }}</p>
         </article>
+
+        @if(!empty($pathfinderRecommendation))
+            <article class="panel recommendation-panel">
+                <span class="recommendation-badge">{{ __('ui.pathfinder.nav_label') }}</span>
+                <div>
+                    <p class="recommendation-title">{{ $pathfinderRecommendation['title'] }}</p>
+                    <p>{{ $pathfinderRecommendation['summary'] }}</p>
+                </div>
+                <div class="recommendation-actions">
+                    <a class="recommendation-primary" href="{{ $pathfinderRecommendation['href'] }}">{{ __('ui.pathfinder.view_course') }}</a>
+                    <a class="recommendation-secondary" href="{{ route('student.pathfinder') }}">{{ __('ui.pathfinder.retake') }}</a>
+                </div>
+            </article>
+        @endif
     </section>
 
     <footer class="site-footer">

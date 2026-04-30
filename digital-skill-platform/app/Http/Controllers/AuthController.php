@@ -167,7 +167,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('student.dashboard'));
+        return redirect()->route('student.pathfinder', ['welcome' => 1]);
     }
 
     public function requestDosenAccess(Request $request)

@@ -59,6 +59,13 @@
 
         .back:hover { color: #fff; border-color: rgba(121, 240, 212, 0.58); }
 
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
         .hero {
             border: 1px solid var(--line);
             border-radius: 18px;
@@ -210,6 +217,10 @@
                 text-align: center;
             }
 
+            .top-actions {
+                justify-content: stretch;
+            }
+
             .hero {
                 padding: 16px;
                 border-radius: 16px;
@@ -266,7 +277,10 @@
 <div class="container">
     <div class="topbar">
         <div class="brand">{{ __('ui.student.mentors_brand') }}</div>
-        <a class="back" href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
+        <div class="top-actions">
+            <a class="back" href="{{ route('student.pathfinder') }}">{{ __('ui.pathfinder.nav_label') }}</a>
+            <a class="back" href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
+        </div>
     </div>
 
     <section class="hero">

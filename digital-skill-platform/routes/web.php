@@ -116,6 +116,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/courses/frontend-craft/page', [AdminDashboardController::class, 'updateFrontendCraftPage'])->name('courses.frontend-craft.page.update');
     });
 
+    Route::get('/student/pathfinder', [StudentCourseController::class, 'pathfinder'])->name('student.pathfinder');
+    Route::post('/student/pathfinder', [StudentCourseController::class, 'savePathfinder'])->name('student.pathfinder.save');
     Route::get('/student/dashboard', [StudentCourseController::class, 'dashboard'])->name('student.dashboard');
     Route::get('/student/courses', [StudentCourseController::class, 'coursesDirectory'])->name('student.courses');
     Route::get('/student/mentors', [StudentCourseController::class, 'mentorsDirectory'])->name('student.mentors');

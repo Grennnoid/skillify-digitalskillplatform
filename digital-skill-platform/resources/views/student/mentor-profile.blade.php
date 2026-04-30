@@ -73,9 +73,20 @@
             color: #cbe0ff;
             text-decoration: none;
             font-size: 15px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 8px 12px;
+            background: rgba(8, 14, 28, 0.75);
         }
 
-        .top a:hover { color: #ffffff; }
+        .top a:hover { color: #ffffff; border-color: rgba(71, 210, 255, 0.55); }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
 
         .profile {
             border: 1px solid var(--line);
@@ -174,6 +185,10 @@
                 align-items: flex-start;
             }
 
+            .top-actions {
+                width: 100%;
+            }
+
             .profile {
                 flex-direction: column;
                 align-items: flex-start;
@@ -215,7 +230,10 @@
 <div class="container">
     <div class="top">
         <strong class="brand">{{ __('ui.student.mentor_profile_title') }}</strong>
-        <a href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
+        <div class="top-actions">
+            <a href="{{ route('student.pathfinder') }}">{{ __('ui.pathfinder.nav_label') }}</a>
+            <a href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
+        </div>
     </div>
 
     <section class="profile">
