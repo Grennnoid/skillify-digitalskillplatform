@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengajuan Dosen Pending | Skillify</title>
+    <title>{{ __('ui.auth.pending_title') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -39,6 +39,52 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 26px 56px rgba(3, 8, 21, 0.45);
+        }
+
+        .shell {
+            width: min(700px, 100%);
+        }
+
+        .auth-topbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(17, 27, 48, 0.6);
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding-left: 6px;
+            white-space: nowrap;
+        }
+
+        .locale-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            color: #d9e8ff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .locale-pill.active {
+            color: #041220;
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
         }
 
         h1 {
@@ -125,27 +171,33 @@
     </style>
 </head>
 <body>
+<div class="shell">
+<div class="auth-topbar">
+    <div class="locale-switcher" aria-label="{{ __('ui.locale.switch') }}">
+        <span>{{ __('ui.locale.switch') }}</span>
+        <a class="locale-pill {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">EN</a>
+        <a class="locale-pill {{ app()->getLocale() === 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">ID</a>
+    </div>
+</div>
 <main class="card">
     @if(session('success'))
         <div class="note" style="margin-top: 0; margin-bottom: 14px; border-color: rgba(124, 246, 214, 0.4); color: #c8ffe8;">
             {{ session('success') }}
         </div>
     @endif
-    <h1>Pengajuan Dosen Sedang Diproses</h1>
-    <p>
-        Akun kamu sudah terdaftar, tapi akses dosen belum aktif.
-        Pengajuan kamu sebagai dosen/mentor harus disetujui admin terlebih dulu.
-    </p>
+    <h1>{{ __('ui.auth.pending_heading') }}</h1>
+    <p>{{ __('ui.auth.pending_intro') }}</p>
     <div class="note">
-        Status saat ini: <strong>Pending Approval</strong>. Setelah disetujui, kamu bisa langsung masuk ke Dosen Dashboard.
+        {{ __('ui.auth.pending_note') }}
     </div>
     <div class="actions">
-        <a class="btn btn-outline" href="{{ route('landing') }}">Back to Landing</a>
+        <a class="btn btn-outline" href="{{ route('landing') }}">{{ __('ui.auth.back_to_landing') }}</a>
         <form action="{{ route('logout') }}" method="POST" style="margin:0;">
             @csrf
-            <button class="btn btn-primary" type="submit" style="border:0;cursor:pointer;">Logout</button>
+            <button class="btn btn-primary" type="submit" style="border:0;cursor:pointer;">{{ __('ui.auth.logout') }}</button>
         </form>
     </div>
 </main>
+</div>
 </body>
 </html>

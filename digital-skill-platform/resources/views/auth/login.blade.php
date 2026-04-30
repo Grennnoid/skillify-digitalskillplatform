@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Skillify</title>
+    <title>{{ __('ui.auth.login_title') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -29,10 +29,57 @@
                 radial-gradient(900px 460px at 82% -18%, rgba(124, 246, 214, 0.18), transparent 58%),
                 linear-gradient(180deg, #050911 0%, #060a12 100%);
             padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .auth-shell {
+            width: min(440px, 100%);
+        }
+
+        .auth-topbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(17, 27, 48, 0.6);
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding-left: 6px;
+            white-space: nowrap;
+        }
+
+        .locale-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            color: #d9e8ff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .locale-pill.active {
+            color: #041220;
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
         }
 
         .card {
-            width: min(440px, 100%);
+            width: 100%;
             border: 1px solid var(--line);
             background: var(--panel);
             backdrop-filter: blur(10px);
@@ -54,6 +101,17 @@
             line-height: 1.6;
         }
 
+        .helper {
+            margin: -8px 0 18px;
+            padding: 12px 14px;
+            border: 1px solid rgba(69, 208, 255, 0.24);
+            border-radius: 12px;
+            background: rgba(10, 24, 45, 0.72);
+            color: #bed6ff;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
         .field { margin-bottom: 16px; }
 
         label {
@@ -63,7 +121,7 @@
             font-size: 13px;
         }
 
-        input {
+        input, select {
             width: 100%;
             border: 1px solid var(--line);
             border-radius: 12px;
@@ -74,7 +132,16 @@
             outline: none;
         }
 
-        input:focus {
+        select {
+            appearance: none;
+            padding-right: 38px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23d4e3ff' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 12px 8px;
+        }
+
+        input:focus, select:focus {
             border-color: rgba(69, 208, 255, 0.72);
             box-shadow: 0 0 0 3px rgba(69, 208, 255, 0.15);
         }
@@ -126,8 +193,12 @@
 
         @media (max-width: 560px) {
             body {
-                place-items: start;
+                place-items: start center;
                 padding: 16px;
+            }
+
+            .auth-shell {
+                width: min(100%, calc(100vw - 32px));
             }
 
             .card {
@@ -147,10 +218,22 @@
     </style>
 </head>
 <body>
-    <div>
+    <div class="auth-shell">
+    <div class="auth-topbar">
+        <div class="locale-switcher" aria-label="{{ __('ui.locale.switch') }}">
+            <span>{{ __('ui.locale.switch') }}</span>
+            <a class="locale-pill {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">EN</a>
+            <a class="locale-pill {{ app()->getLocale() === 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">ID</a>
+        </div>
+    </div>
     <main class="card">
-        <h1>Welcome Back</h1>
-        <p>Sign in to continue your digital skill journey.</p>
+        <h1>{{ __('ui.auth.login_heading') }}</h1>
+        <p>{{ __('ui.auth.login_subtitle') }}</p>
+        @if(($loginIntent ?? null) === 'teach')
+            <div class="helper">
+                {{ __('ui.auth.teach_helper') }}
+            </div>
+        @endif
 
         @if($errors->any())
             <div class="error">{{ $errors->first() }}</div>
@@ -158,24 +241,35 @@
 
         <form action="{{ route('login') }}" method="POST">
             @csrf
+            @if(($loginIntent ?? null) === 'teach')
+                <input type="hidden" name="intent" value="teach">
+            @endif
 
             <div class="field">
-                <label for="email">Email</label>
+                <label for="email">{{ __('ui.auth.email') }}</label>
                 <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus>
             </div>
 
             <div class="field">
-                <label for="password">Password</label>
+                <label for="password">{{ __('ui.auth.password') }}</label>
                 <input type="password" id="password" name="password" required>
             </div>
 
-            <button type="submit" class="btn">Login</button>
+            <div class="field">
+                <label for="login_as">{{ __('ui.auth.login_as') }}</label>
+                <select id="login_as" name="login_as" required>
+                    <option value="student" @selected(old('login_as', ($loginIntent ?? null) === 'teach' ? 'dosen' : 'student') === 'student')>{{ __('ui.auth.student') }}</option>
+                    <option value="dosen" @selected(old('login_as', ($loginIntent ?? null) === 'teach' ? 'dosen' : 'student') === 'dosen')>{{ __('ui.auth.dosen') }}</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn">{{ __('ui.auth.login') }}</button>
         </form>
 
         <div class="foot">
-            New here? <a href="{{ route('register') }}">Create an account</a>
+            {{ __('ui.auth.new_here') }} <a href="{{ route('register') }}">{{ __('ui.auth.create_account') }}</a>
             <br>
-            <a href="{{ route('landing') }}">Back to landing page</a>
+            <a href="{{ route('landing') }}">{{ __('ui.auth.back_landing') }}</a>
         </div>
     </main>
     <footer class="site-footer">

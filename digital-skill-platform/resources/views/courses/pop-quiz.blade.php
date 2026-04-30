@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $course->title }} Pop Quiz | Skillify</title>
+    <title>{{ __('ui.course.pop_quiz_title_page', ['course' => $course->title]) }}</title>
     <style>
         :root {
             --bg: #050914;
@@ -289,18 +289,18 @@
     <div class="topbar">
         <div>
             <strong>{{ $course->title }}</strong><br>
-            <span class="muted">Pop quiz setelah Chapter {{ $afterChapter }}</span>
+            <span class="muted">{{ __('ui.course.pop_quiz_after', ['chapter' => $afterChapter]) }}</span>
         </div>
         <div class="top-actions">
-            <a class="chip" href="{{ $roadmapUrl }}">Back To Roadmap</a>
-            <a class="chip" href="{{ $dashboardUrl }}">Dashboard</a>
+            <a class="chip" href="{{ $roadmapUrl }}">{{ __('ui.course.back_to_roadmap') }}</a>
+            <a class="chip" href="{{ $dashboardUrl }}">{{ __('ui.course.dashboard') }}</a>
         </div>
     </div>
 
     <div class="hero">
-        <div class="badge">Pop Quiz Gate &bull; Wajib skor 100% untuk membuka chapter berikutnya</div>
-        <h1>Checkpoint Quiz</h1>
-        <p class="muted">Selesaikan semua soal dengan benar dulu. Setelah lulus, chapter berikutnya langsung terbuka.</p>
+        <div class="badge">{{ __('ui.course.pop_quiz_gate_label') }}</div>
+        <h1>{{ __('ui.course.checkpoint_quiz') }}</h1>
+        <p class="muted">{{ __('ui.course.checkpoint_text') }}</p>
     </div>
 
     @if($errors->has('pop_quiz'))
@@ -314,15 +314,14 @@
     @php($result = session('popQuizResult'))
     @if($isPassed)
         <div class="success-box">
-            Pop quiz ini sudah pernah kamu luluskan.
+            {{ __('ui.course.already_passed') }}
             @if($lastScorePercent !== null)
-                Skor terakhir: {{ rtrim(rtrim(number_format($lastScorePercent, 2), '0'), '.') }}%
+                {{ __('ui.course.last_score', ['score' => rtrim(rtrim(number_format($lastScorePercent, 2), '0'), '.')]) }}
             @endif
         </div>
     @elseif(is_array($result))
         <div class="error-box">
-            Skor terakhir: {{ rtrim(rtrim(number_format($result['score_percent'], 2), '0'), '.') }}%
-            ({{ $result['correct_answers'] }}/{{ $result['total_questions'] }} benar)
+            {{ __('ui.course.score_summary', ['score' => rtrim(rtrim(number_format($result['score_percent'], 2), '0'), '.'), 'correct' => $result['correct_answers'], 'total' => $result['total_questions']]) }}
         </div>
     @endif
 
@@ -334,9 +333,9 @@
                 <article class="question {{ !empty($questionResult['is_correct']) ? 'correct' : '' }}">
                     <div class="question-head">
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                            <strong>Question {{ $index + 1 }}</strong>
+                            <strong>{{ __('ui.course.question_label', ['number' => $index + 1]) }}</strong>
                             @if(!empty($questionResult['is_correct']))
-                                <span class="status-pill correct">Correct</span>
+                                <span class="status-pill correct">{{ __('ui.course.correct') }}</span>
                             @endif
                         </div>
                         <span class="difficulty">{{ strtoupper($question['difficulty']) }}</span>
@@ -353,16 +352,16 @@
                             @endforeach
                         </div>
                     @else
-                        <textarea class="answer-field" name="answers[{{ $question['id'] }}]" placeholder="Tulis jawaban essay kamu di sini...">{{ old('answers.'.$question['id']) }}</textarea>
+                        <textarea class="answer-field" name="answers[{{ $question['id'] }}]" placeholder="{{ __('ui.course.essay_placeholder') }}">{{ old('answers.'.$question['id']) }}</textarea>
                     @endif
                 </article>
             @endforeach
         </div>
 
         <div style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <button class="submit-btn" type="submit">Submit Pop Quiz</button>
+            <button class="submit-btn" type="submit">{{ __('ui.course.submit_pop_quiz') }}</button>
             @if($isPassed)
-                <a class="chip" href="{{ $nextChapterUrl }}">Continue To Next Chapter</a>
+                <a class="chip" href="{{ $nextChapterUrl }}">{{ __('ui.course.continue_to_next') }}</a>
             @endif
         </div>
     </form>

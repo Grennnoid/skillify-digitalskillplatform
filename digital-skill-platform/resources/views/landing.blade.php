@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skillify | Future of Learning</title>
+    <title>{{ __('ui.landing.title_page') }}</title>
     <style>
         :root {
             --bg: #070b14;
             --panel: rgba(13, 21, 39, 0.72);
-            --panel-solid: #101b33;
             --text: #e6efff;
             --muted: #90a3c7;
             --line: rgba(154, 178, 225, 0.25);
@@ -19,12 +18,15 @@
 
         * { box-sizing: border-box; }
 
+        html { scroll-behavior: smooth; }
+
         body {
             margin: 0;
             min-height: 100vh;
             font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
             color: var(--text);
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             background:
                 radial-gradient(1100px 580px at 14% -12%, rgba(69, 208, 255, 0.24), transparent 60%),
                 radial-gradient(1000px 520px at 86% -16%, rgba(124, 246, 214, 0.2), transparent 56%),
@@ -39,7 +41,7 @@
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 46px 46px;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.62), transparent 86%);
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 92%);
         }
 
         .container {
@@ -48,15 +50,21 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 2;
         }
 
         .nav {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
             align-items: center;
-            justify-content: space-between;
-            padding: 29px 0 10px;
-            position: relative;
-            z-index: 20;
+            gap: 18px;
+            padding: 29px 0 12px;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            backdrop-filter: blur(12px);
+            background: linear-gradient(180deg, rgba(5, 9, 17, 0.92), rgba(5, 9, 17, 0.55));
         }
 
         .brand {
@@ -81,30 +89,31 @@
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 26px;
-            position: relative;
+            justify-content: center;
+            gap: clamp(16px, 2vw, 26px);
+            min-width: 0;
+            flex-wrap: wrap;
         }
 
         .link, .dropdown-toggle {
             color: #c8d8f5;
             text-decoration: none;
-            font-size: 19px;
+            font-size: clamp(16px, 1.5vw, 19px);
             letter-spacing: 0.2px;
             background: none;
             border: 0;
             cursor: pointer;
             padding: 10px 5px;
+            white-space: nowrap;
         }
 
         .link:hover, .dropdown-toggle:hover { color: #f0f6ff; }
 
-        .dropdown {
-            position: relative;
-        }
+        .dropdown { position: relative; }
 
         .dropdown-menu {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             left: 0;
             min-width: 264px;
             border: 1px solid var(--line);
@@ -133,15 +142,50 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            min-width: 0;
         }
 
-        .actions form {
-            margin: 0;
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(17, 27, 48, 0.6);
         }
 
-        .profile-menu {
-            position: relative;
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding-left: 6px;
+            white-space: nowrap;
         }
+
+        .locale-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            color: #d9e8ff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .locale-pill.active {
+            color: #041220;
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
+        }
+
+        .actions form { margin: 0; }
+
+        .profile-menu { position: relative; }
 
         .profile-menu::after {
             content: "";
@@ -177,9 +221,7 @@
             line-height: 1;
         }
 
-        .profile-trigger:hover {
-            border-color: rgba(124, 246, 214, 0.5);
-        }
+        .profile-trigger:hover { border-color: rgba(124, 246, 214, 0.5); }
 
         .profile-image {
             position: absolute;
@@ -205,9 +247,7 @@
             box-shadow: var(--shadow);
         }
 
-        .profile-menu.open .profile-dropdown {
-            display: block;
-        }
+        .profile-menu.open .profile-dropdown { display: block; }
 
         .profile-head {
             padding: 10px;
@@ -240,9 +280,7 @@
             cursor: pointer;
         }
 
-        .profile-item:hover {
-            background: rgba(69, 208, 255, 0.13);
-        }
+        .profile-item:hover { background: rgba(69, 208, 255, 0.13); }
 
         .btn {
             display: inline-flex;
@@ -251,9 +289,10 @@
             text-decoration: none;
             border-radius: 14px;
             font-weight: 600;
-            font-size: 19px;
+            font-size: clamp(16px, 1.45vw, 19px);
             padding: 12px 19px;
             transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+            white-space: nowrap;
         }
 
         .btn-outline {
@@ -279,10 +318,8 @@
         }
 
         .hero {
-            padding: 32px 0 24px;
+            padding: 36px 0 18px;
             position: relative;
-            z-index: 2;
-            flex: 1;
             display: flex;
         }
 
@@ -309,9 +346,9 @@
 
         h1 {
             margin: 18px 0 12px;
-            font-size: clamp(28px, 3.8vw, 48px);
-            line-height: 1.08;
-            letter-spacing: -0.7px;
+            font-size: clamp(28px, 3.8vw, 56px);
+            line-height: 1.06;
+            letter-spacing: -0.8px;
             max-width: 13ch;
         }
 
@@ -319,8 +356,8 @@
             margin: 0;
             max-width: 52ch;
             color: var(--muted);
-            font-size: clamp(14px, 1.5vw, 17px);
-            line-height: 1.65;
+            font-size: clamp(14px, 1.5vw, 18px);
+            line-height: 1.72;
         }
 
         .hero-actions {
@@ -331,7 +368,7 @@
         }
 
         .stats {
-            margin-top: 18px;
+            margin-top: 22px;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 12px;
@@ -356,42 +393,192 @@
             font-size: 13px;
         }
 
-        @media (max-width: 900px) {
-            body {
-                overflow: auto;
-            }
+        .story-grid {
+            display: grid;
+            gap: 18px;
+            margin-top: 10px;
+            padding-bottom: 10px;
+        }
 
-            .container {
-                min-height: auto;
-            }
+        .story-section {
+            border: 1px solid var(--line);
+            background: rgba(11, 18, 34, 0.74);
+            border-radius: 24px;
+            padding: clamp(22px, 3vw, 34px);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
 
+        .section-head {
+            max-width: 62ch;
+            margin-bottom: 18px;
+        }
+
+        .section-head h2 {
+            margin: 0 0 10px;
+            font-size: clamp(24px, 3vw, 38px);
+            line-height: 1.12;
+            letter-spacing: -0.45px;
+        }
+
+        .section-head p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .feature-grid,
+        .audience-grid,
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .step-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .info-card {
+            border: 1px solid var(--line);
+            background: rgba(14, 21, 38, 0.62);
+            border-radius: 18px;
+            padding: 18px;
+        }
+
+        .info-card .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: #b8f9e8;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .info-card h3 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        .info-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.65;
+            font-size: 14px;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: inline-grid;
+            place-items: center;
+            margin-bottom: 12px;
+            background: linear-gradient(120deg, rgba(69, 208, 255, 0.18), rgba(124, 246, 214, 0.18));
+            border: 1px solid rgba(124, 246, 214, 0.28);
+            color: #dffcff;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .about-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .bullet-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .bullet-item {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px 16px;
+            background: rgba(14, 21, 38, 0.6);
+            color: #dce8ff;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .final-cta {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) auto;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .final-cta p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.75;
+            font-size: 15px;
+            max-width: 58ch;
+        }
+
+        .final-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .site-footer {
+            border-top: 1px solid var(--line);
+            margin-top: 24px;
+            padding: 18px 0 28px;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 1180px) {
+            .locale-switcher span { display: none; }
+        }
+
+        @media (max-width: 1040px) {
             .nav {
-                flex-wrap: wrap;
+                grid-template-columns: 1fr;
                 gap: 14px;
             }
 
             .nav-links {
                 width: 100%;
-                order: 3;
                 justify-content: flex-start;
                 overflow-x: auto;
                 padding-bottom: 4px;
+                flex-wrap: nowrap;
             }
 
-            .stats {
+            .actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .stats,
+            .feature-grid,
+            .audience-grid,
+            .showcase-grid,
+            .step-grid,
+            .about-panel,
+            .final-cta {
                 grid-template-columns: 1fr;
             }
-
-            .hero { padding-top: 56px; }
         }
 
-        .site-footer {
-            border-top: 1px solid var(--line);
-            margin-top: 8px;
-            padding: 10px 0 14px;
-            color: var(--muted);
-            font-size: 13px;
-            text-align: center;
+        @media (max-width: 640px) {
+            .actions { gap: 10px; }
+            .btn { padding: 11px 16px; }
+            .locale-switcher { order: -1; }
+            .story-section { border-radius: 20px; }
         }
     </style>
 </head>
@@ -406,39 +593,44 @@
             </a>
 
             <div class="nav-links">
-                <a class="link" href="#">Home</a>
+                <a class="link" href="#top">{{ __('ui.landing.home') }}</a>
 
                 <div class="dropdown" id="courseDropdown">
-                    <button class="dropdown-toggle" type="button" aria-expanded="false" aria-controls="coursesMenu">Courses v</button>
+                    <button class="dropdown-toggle" type="button" aria-expanded="false" aria-controls="coursesMenu">{{ __('ui.landing.courses') }} v</button>
                     <div class="dropdown-menu" id="coursesMenu">
                         @forelse(($landingCourses ?? []) as $courseItem)
                             <a class="dropdown-item" href="{{ $courseItem['href'] }}">{{ $courseItem['title'] }}</a>
                         @empty
-                            <span class="dropdown-item" style="opacity:.75; cursor:default;">No courses available yet</span>
+                            <span class="dropdown-item" style="opacity:.75; cursor:default;">{{ __('ui.landing.courses_empty') }}</span>
                         @endforelse
                     </div>
                 </div>
 
                 @auth
                     @if(auth()->user()->role === 'student')
-                        <a class="link" href="{{ route('teach.entry') }}">Teach On Skillify</a>
+                        <a class="link" href="{{ route('teach.entry') }}">{{ __('ui.landing.teach') }}</a>
                     @else
-                        <a class="link" href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('dosen.dashboard') }}">Teach On Skillify</a>
+                        <a class="link" href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('dosen.dashboard') }}">{{ __('ui.landing.teach') }}</a>
                     @endif
                 @else
-                    <a class="link" href="{{ route('teach.entry') }}">Teach On Skillify</a>
+                    <a class="link" href="{{ route('teach.entry') }}">{{ __('ui.landing.teach') }}</a>
                 @endauth
-                <a class="link" href="#">About</a>
+                <a class="link" href="#platform-story">{{ __('ui.landing.about') }}</a>
             </div>
 
             <div class="actions">
+                <div class="locale-switcher" aria-label="{{ __('ui.locale.switch') }}">
+                    <span>{{ __('ui.locale.switch') }}</span>
+                    <a class="locale-pill {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">EN</a>
+                    <a class="locale-pill {{ app()->getLocale() === 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">ID</a>
+                </div>
                 @auth
                     @if(auth()->user()->role === 'admin')
-                        <a class="btn btn-outline" href="{{ route('admin.dashboard') }}">Dashboard</a>
+                        <a class="btn btn-outline" href="{{ route('admin.dashboard') }}">{{ __('ui.landing.dashboard') }}</a>
                     @elseif(auth()->user()->role === 'dosen')
-                        <a class="btn btn-outline" href="{{ route('dosen.dashboard') }}">Dashboard</a>
+                        <a class="btn btn-outline" href="{{ route('dosen.dashboard') }}">{{ __('ui.landing.dashboard') }}</a>
                     @else
-                        <a class="btn btn-outline" href="{{ route('student.dashboard') }}">Dashboard</a>
+                        <a class="btn btn-outline" href="{{ route('student.dashboard') }}">{{ __('ui.landing.dashboard') }}</a>
                     @endif
 
                     @php
@@ -460,64 +652,202 @@
                                 <strong>{{ auth()->user()->name }}</strong>
                                 <span>{{ auth()->user()->email }}</span>
                             </div>
-                            <a class="profile-item" href="{{ route('profile.show') }}">Profile Settings</a>
-                            <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">Switch Account</a>
+                            <a class="profile-item" href="{{ route('profile.show') }}">{{ __('ui.landing.profile_settings') }}</a>
+                            <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">{{ __('ui.landing.switch_account') }}</a>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
-                                <button type="submit" class="profile-item">Logout</button>
+                                <button type="submit" class="profile-item">{{ __('ui.landing.logout') }}</button>
                             </form>
                         </div>
                     </div>
                 @else
-                    <a class="btn btn-outline" href="{{ route('login') }}">Login</a>
-                    <a class="btn btn-primary" href="{{ route('register') }}">Sign Up</a>
+                    <a class="btn btn-outline" href="{{ route('login') }}">{{ __('ui.landing.login') }}</a>
+                    <a class="btn btn-primary" href="{{ route('register') }}">{{ __('ui.landing.sign_up') }}</a>
                 @endauth
             </div>
         </nav>
 
-        <section class="hero">
+        <section class="hero" id="top">
             <div class="hero-card">
-                <span class="tag">Future-ready Learning Experience</span>
-                <h1>Build elite digital skills for tomorrow.</h1>
-                <p class="subtitle">
-                    Learn through curated programs, project-based paths, and AI-powered guidance. Designed for students and professionals who want a sharp, modern learning journey.
-                </p>
+                <span class="tag">{{ __('ui.landing.hero_tag') }}</span>
+                <h1>{{ __('ui.landing.hero_title') }}</h1>
+                <p class="subtitle">{{ __('ui.landing.hero_subtitle') }}</p>
 
                 <div class="hero-actions">
                     @auth
                         @if(auth()->user()->role === 'admin')
-                            <a class="btn btn-primary" href="{{ route('admin.dashboard') }}">Open Dashboard</a>
+                            <a class="btn btn-primary" href="{{ route('admin.dashboard') }}">{{ __('ui.landing.open_dashboard') }}</a>
                         @elseif(auth()->user()->role === 'dosen')
-                            <a class="btn btn-primary" href="{{ route('dosen.dashboard') }}">Open Dashboard</a>
+                            <a class="btn btn-primary" href="{{ route('dosen.dashboard') }}">{{ __('ui.landing.open_dashboard') }}</a>
                         @else
-                            <a class="btn btn-primary" href="{{ route('student.dashboard') }}">Continue Learning</a>
+                            <a class="btn btn-primary" href="{{ route('student.dashboard') }}">{{ __('ui.landing.continue_learning') }}</a>
                         @endif
-                        <a class="btn btn-outline" href="{{ route('login', ['switch' => 1]) }}">Switch Account</a>
+                        <a class="btn btn-outline" href="{{ route('login', ['switch' => 1]) }}">{{ __('ui.landing.switch_account') }}</a>
                     @else
-                        <a class="btn btn-primary" href="{{ route('register') }}">Create Account</a>
-                        <a class="btn btn-outline" href="{{ route('login') }}">I Already Have an Account</a>
+                        <a class="btn btn-primary" href="{{ route('register') }}">{{ __('ui.landing.create_account') }}</a>
+                        <a class="btn btn-outline" href="{{ route('login') }}">{{ __('ui.landing.already_have_account') }}</a>
                     @endauth
                 </div>
 
                 <div class="stats">
                     <div class="stat">
                         <strong>{{ number_format((int) (($landingStats['total_courses'] ?? 0))) }}</strong>
-                        <span>Available courses</span>
+                        <span>{{ __('ui.landing.available_courses') }}</span>
                     </div>
                     <div class="stat">
                         <strong>{{ number_format((int) (($landingStats['total_learners'] ?? 0))) }}</strong>
-                        <span>Active learners</span>
+                        <span>{{ __('ui.landing.active_learners') }}</span>
                     </div>
                     <div class="stat">
                         <strong>{{ number_format((int) (($landingStats['total_mentors'] ?? 0))) }}</strong>
-                        <span>Active mentors</span>
+                        <span>{{ __('ui.landing.active_mentors') }}</span>
                     </div>
                 </div>
             </div>
         </section>
 
+        <div class="story-grid">
+            <section class="story-section" id="platform-story">
+                <div class="section-head">
+                    <h2>{{ __('ui.landing.section_platform') }}</h2>
+                    <p>{{ __('ui.landing.section_platform_text') }}</p>
+                </div>
+                <div class="feature-grid">
+                    <article class="info-card">
+                        <span class="eyebrow">01</span>
+                        <h3>{{ __('ui.landing.feature_1_title') }}</h3>
+                        <p>{{ __('ui.landing.feature_1_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">02</span>
+                        <h3>{{ __('ui.landing.feature_2_title') }}</h3>
+                        <p>{{ __('ui.landing.feature_2_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">03</span>
+                        <h3>{{ __('ui.landing.feature_3_title') }}</h3>
+                        <p>{{ __('ui.landing.feature_3_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">04</span>
+                        <h3>{{ __('ui.landing.feature_4_title') }}</h3>
+                        <p>{{ __('ui.landing.feature_4_text') }}</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="story-section">
+                <div class="section-head">
+                    <h2>{{ __('ui.landing.section_how_title') }}</h2>
+                    <p>{{ __('ui.landing.section_how_text') }}</p>
+                </div>
+                <div class="step-grid">
+                    <article class="info-card">
+                        <div class="step-number">1</div>
+                        <h3>{{ __('ui.landing.how_1_title') }}</h3>
+                        <p>{{ __('ui.landing.how_1_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <div class="step-number">2</div>
+                        <h3>{{ __('ui.landing.how_2_title') }}</h3>
+                        <p>{{ __('ui.landing.how_2_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <div class="step-number">3</div>
+                        <h3>{{ __('ui.landing.how_3_title') }}</h3>
+                        <p>{{ __('ui.landing.how_3_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <div class="step-number">4</div>
+                        <h3>{{ __('ui.landing.how_4_title') }}</h3>
+                        <p>{{ __('ui.landing.how_4_text') }}</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="story-section">
+                <div class="about-panel">
+                    <div class="section-head" style="margin-bottom: 0;">
+                        <h2>{{ __('ui.landing.section_about_title') }}</h2>
+                        <p>{{ __('ui.landing.section_about_text') }}</p>
+                    </div>
+                    <div class="bullet-list">
+                        <div class="bullet-item">{{ __('ui.landing.about_point_1') }}</div>
+                        <div class="bullet-item">{{ __('ui.landing.about_point_2') }}</div>
+                        <div class="bullet-item">{{ __('ui.landing.about_point_3') }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="story-section">
+                <div class="section-head">
+                    <h2>{{ __('ui.landing.section_showcase_title') }}</h2>
+                    <p>{{ __('ui.landing.section_showcase_text') }}</p>
+                </div>
+                <div class="showcase-grid">
+                    <article class="info-card">
+                        <span class="eyebrow">Flow</span>
+                        <h3>{{ __('ui.landing.showcase_1_title') }}</h3>
+                        <p>{{ __('ui.landing.showcase_1_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">AI</span>
+                        <h3>{{ __('ui.landing.showcase_2_title') }}</h3>
+                        <p>{{ __('ui.landing.showcase_2_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">Quiz</span>
+                        <h3>{{ __('ui.landing.showcase_3_title') }}</h3>
+                        <p>{{ __('ui.landing.showcase_3_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">Insights</span>
+                        <h3>{{ __('ui.landing.showcase_4_title') }}</h3>
+                        <p>{{ __('ui.landing.showcase_4_text') }}</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="story-section">
+                <div class="section-head">
+                    <h2>{{ __('ui.landing.section_audience_title') }}</h2>
+                    <p>{{ __('ui.landing.section_audience_text') }}</p>
+                </div>
+                <div class="audience-grid">
+                    <article class="info-card">
+                        <span class="eyebrow">Learners</span>
+                        <h3>{{ __('ui.landing.audience_1_title') }}</h3>
+                        <p>{{ __('ui.landing.audience_1_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">Mentors</span>
+                        <h3>{{ __('ui.landing.audience_2_title') }}</h3>
+                        <p>{{ __('ui.landing.audience_2_text') }}</p>
+                    </article>
+                    <article class="info-card">
+                        <span class="eyebrow">Platform</span>
+                        <h3>{{ __('ui.landing.audience_3_title') }}</h3>
+                        <p>{{ __('ui.landing.audience_3_text') }}</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="story-section">
+                <div class="final-cta">
+                    <div>
+                        <h2 style="margin:0;font-size:clamp(24px, 3vw, 40px);line-height:1.1;">{{ __('ui.landing.section_final_title') }}</h2>
+                        <p>{{ __('ui.landing.section_final_text') }}</p>
+                    </div>
+                    <div class="final-actions">
+                        <a class="btn btn-primary" href="{{ route('register') }}">{{ __('ui.landing.final_primary') }}</a>
+                        <a class="btn btn-outline" href="#top">{{ __('ui.landing.final_secondary') }}</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
         <footer class="site-footer">
-            <p>&copy; {{ date('Y') }} Skillify. Build skills. Build future.</p>
+            <p>&copy; {{ date('Y') }} {{ __('ui.landing.footer') }}</p>
         </footer>
     </div>
 
@@ -557,4 +887,3 @@
     </script>
 </body>
 </html>
-

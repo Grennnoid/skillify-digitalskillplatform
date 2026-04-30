@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentors | Skillify</title>
+    <title>{{ __('ui.student.mentors_title') }}</title>
     <style>
         :root {
             --bg: #04070f;
@@ -265,21 +265,21 @@
 <body>
 <div class="container">
     <div class="topbar">
-        <div class="brand">Skillify Mentors</div>
-        <a class="back" href="{{ route('student.dashboard') }}">Back To Dashboard</a>
+        <div class="brand">{{ __('ui.student.mentors_brand') }}</div>
+        <a class="back" href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
     </div>
 
     <section class="hero">
-        <h1>Discover Mentors</h1>
-        <p>Explore mentor profiles, background, and how many courses they have created.</p>
+        <h1>{{ __('ui.student.discover_mentors') }}</h1>
+        <p>{{ __('ui.student.discover_mentors_text') }}</p>
         <form class="search" method="GET" action="{{ route('student.mentors') }}">
-            <input id="searchInput" type="text" name="q" value="{{ $search }}" placeholder="Search mentors by name or bio...">
-            <button type="submit">Search</button>
+            <input id="searchInput" type="text" name="q" value="{{ $search }}" placeholder="{{ __('ui.student.search_mentors') }}">
+            <button type="submit">{{ __('ui.student.search') }}</button>
         </form>
     </section>
 
     @if(($mentors ?? collect())->isEmpty())
-        <div class="empty">No matching mentors found.</div>
+        <div class="empty">{{ __('ui.student.no_matching_mentors') }}</div>
     @else
         <section class="grid" id="mentorsGrid">
             @foreach($mentors as $mentor)
@@ -287,7 +287,7 @@
                     $nameParts = preg_split('/\s+/', trim($mentor->name));
                     $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1).substr($nameParts[1] ?? '', 0, 1));
                     $initials = $initials !== '' ? $initials : 'M';
-                    $bio = \Illuminate\Support\Str::limit(trim((string) ($mentor->bio ?? 'Mentor aktif di Skillify.')), 130);
+                    $bio = \Illuminate\Support\Str::limit(trim((string) ($mentor->bio ?? __('ui.student.mentor_fallback_bio'))), 130);
                 @endphp
                 <article class="card" data-search="{{ strtolower($mentor->name.' '.$bio) }}">
                     <div class="avatar">
@@ -299,9 +299,9 @@
                     </div>
                     <div class="meta">
                         <h3>{{ $mentor->name }}</h3>
-                        <div class="count">{{ (int) $mentor->courses_count }} course(s) created</div>
+                        <div class="count">{{ __('ui.student.courses_created', ['count' => (int) $mentor->courses_count]) }}</div>
                         <p>{{ $bio }}</p>
-                        <a class="btn" href="{{ route('mentors.show', ['mentor' => $mentor->id]) }}">View Mentor Profile</a>
+                        <a class="btn" href="{{ route('mentors.show', ['mentor' => $mentor->id]) }}">{{ __('ui.student.view_mentor_profile') }}</a>
                     </div>
                 </article>
             @endforeach

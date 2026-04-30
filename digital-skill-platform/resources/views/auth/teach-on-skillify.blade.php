@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teach On Skillify</title>
+    <title>{{ __('ui.auth.teach_title') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -39,6 +39,52 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 26px 56px rgba(3, 8, 21, 0.45);
+        }
+
+        .shell {
+            width: min(720px, 100%);
+        }
+
+        .auth-topbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(17, 27, 48, 0.6);
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding-left: 6px;
+            white-space: nowrap;
+        }
+
+        .locale-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            color: #d9e8ff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .locale-pill.active {
+            color: #041220;
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
         }
 
         h1 {
@@ -132,12 +178,17 @@
     </style>
 </head>
 <body>
+<div class="shell">
+<div class="auth-topbar">
+    <div class="locale-switcher" aria-label="{{ __('ui.locale.switch') }}">
+        <span>{{ __('ui.locale.switch') }}</span>
+        <a class="locale-pill {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">EN</a>
+        <a class="locale-pill {{ app()->getLocale() === 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">ID</a>
+    </div>
+</div>
 <main class="card">
-    <h1>Teach On Skillify</h1>
-    <p>
-        Kamu bisa lanjut belajar seperti biasa sebagai student.
-        Kalau mau jadi dosen, kirim pengajuan dulu untuk approval admin.
-    </p>
+    <h1>{{ __('ui.auth.teach_title') }}</h1>
+    <p>{{ __('ui.auth.teach_intro') }}</p>
 
     @if(session('success'))
         <div class="status ok">{{ session('success') }}</div>
@@ -145,24 +196,25 @@
 
     @if($isPending)
         <div class="status">
-            Status pengajuan kamu: <strong>Pending Approval</strong>. Sambil menunggu, kamu tetap bisa akses dashboard student dan course kamu.
+            {{ __('ui.auth.pending_status') }}
         </div>
         <div class="actions">
-            <a class="btn btn-outline" href="{{ route('student.dashboard') }}">Back To Student Dashboard</a>
-            <a class="btn btn-outline" href="{{ route('dosen.pending-approval') }}">Open Pending Status Page</a>
+            <a class="btn btn-outline" href="{{ route('student.dashboard') }}">{{ __('ui.auth.back_student_dashboard') }}</a>
+            <a class="btn btn-outline" href="{{ route('dosen.pending-approval') }}">{{ __('ui.auth.open_pending_page') }}</a>
         </div>
     @else
         <div class="status">
-            Setelah klik submit, role kamu tetap <strong>Student</strong> sampai admin approve. Tidak ada akses yang hilang.
+            {{ __('ui.auth.student_role_note') }}
         </div>
         <div class="actions">
             <form action="{{ route('teach.request') }}" method="POST" style="margin:0;">
                 @csrf
-                <button class="btn btn-primary" type="submit">Submit Dosen Request</button>
+                <button class="btn btn-primary" type="submit">{{ __('ui.auth.submit_dosen_request') }}</button>
             </form>
-            <a class="btn btn-outline" href="{{ route('student.dashboard') }}">Not Now</a>
+            <a class="btn btn-outline" href="{{ route('student.dashboard') }}">{{ __('ui.auth.not_now') }}</a>
         </div>
     @endif
 </main>
+</div>
 </body>
 </html>

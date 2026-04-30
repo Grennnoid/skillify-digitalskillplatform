@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $course->title }} | Course Info</title>
+    <title>{{ __('ui.course.course_info_title', ['title' => $course->title]) }}</title>
     <style>
         :root {
             --bg: #050914;
@@ -415,19 +415,19 @@
 
     if (empty($syllabusItems)) {
         $syllabusItems = [
-            ['title' => 'Module 1: Fundamentals', 'description' => 'Pengenalan konsep inti, setup, dan pondasi belajar untuk course ini.'],
-            ['title' => 'Module 2: Core Practice', 'description' => 'Pendalaman materi utama melalui latihan terarah dan studi kasus.'],
-            ['title' => 'Module 3: Applied Project', 'description' => 'Implementasi materi dalam project yang relevan dengan kebutuhan industri.'],
-            ['title' => 'Module 4: Final Review', 'description' => 'Evaluasi hasil belajar, perbaikan, dan strategi kelanjutan belajar.'],
+            ['title' => __('ui.course.module_1'), 'description' => __('ui.course.module_1_desc')],
+            ['title' => __('ui.course.module_2'), 'description' => __('ui.course.module_2_desc')],
+            ['title' => __('ui.course.module_3'), 'description' => __('ui.course.module_3_desc')],
+            ['title' => __('ui.course.module_4'), 'description' => __('ui.course.module_4_desc')],
         ];
     }
 
     $outcomes = !empty($course->learning_outcomes)
         ? array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $course->learning_outcomes))))
         : [
-            'Memahami konsep inti course ini secara terstruktur.',
-            'Mampu menerapkan materi menjadi output praktis.',
-            'Punya hasil belajar yang bisa jadi portofolio awal.',
+            __('ui.course.course_default_outcome_1'),
+            __('ui.course.course_default_outcome_2'),
+            __('ui.course.course_default_outcome_3'),
         ];
 
     $defaultInstructorImage = 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1200&q=80';
@@ -436,7 +436,7 @@
         : $defaultInstructorImage;
     $heroBackground = $course->hero_background_url ?: $course->trailer_poster_url ?: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?auto=format&fit=crop&w=1400&q=80';
 
-    $instructorName = $course->instructor_name ?: ($course->mentor_name ?: 'Digital Skill Team');
+    $instructorName = $course->instructor_name ?: ($course->mentor_name ?: __('ui.course.digital_skill_team'));
 
     $videoEmbedUrl = null;
     if (!empty($course->trailer_url)) {
@@ -459,15 +459,15 @@
     @endif
 
     <div class="topbar">
-        <div class="brand">Skillify</div>
+        <div class="brand">{{ __('ui.course.skillify') }}</div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <a class="link" href="{{ route('student.dashboard') }}">Back To Dashboard</a>
+            <a class="link" href="{{ route('student.dashboard') }}">{{ __('ui.course.back_to_dashboard') }}</a>
             @if(!empty($isEnrolled))
-                <a class="btn" href="{{ route('courses.quiz.roadmap', ['quiz' => $course->id]) }}">Continue Learning</a>
+                <a class="btn" href="{{ route('courses.quiz.roadmap', ['quiz' => $course->id]) }}">{{ __('ui.course.continue_learning') }}</a>
             @else
                 <form action="{{ route('courses.quiz.enroll', ['quiz' => $course->id]) }}" method="POST" style="margin:0;">
                     @csrf
-                    <button class="btn" type="submit" style="border:0; cursor:pointer;">Start Learning</button>
+                    <button class="btn" type="submit" style="border:0; cursor:pointer;">{{ __('ui.course.start_learning') }}</button>
                 </form>
             @endif
         </div>
@@ -484,14 +484,14 @@
             <div class="hero-content">
                 <div>
                     <h1>{{ $course->hero_title ?: $course->title }}</h1>
-                    <p class="tagline">{{ $course->tagline ?: 'Pelajari skill digital ini secara terstruktur sampai siap praktik.' }}</p>
+                    <p class="tagline">{{ $course->tagline ?: __('ui.course.course_learning_tagline') }}</p>
                 </div>
                 <div class="instructor">
                     <div class="instructor-media">
                         <img src="{{ $mentorImage }}" alt="Instructor {{ $instructorName }}">
                     </div>
                     <div class="instructor-meta">
-                        <small>Instruktur</small>
+                        <small>{{ __('ui.course.instructor') }}</small>
                         <strong>{{ $instructorName }}</strong>
                     </div>
                 </div>
@@ -500,15 +500,15 @@
     </section>
 
     <section class="section" id="overview">
-        <h2>About This Course</h2>
-        <p>{{ $course->about ?: 'Course ini dirancang untuk membantu kamu belajar bertahap dari konsep dasar sampai implementasi nyata.' }}</p>
-        <div class="audience-chip">Cocok untuk: {{ $course->target_audience ?: ucfirst($course->difficulty ?? 'beginner') }}</div>
+        <h2>{{ __('ui.course.about_this_course') }}</h2>
+        <p>{{ $course->about ?: __('ui.course.course_about') }}</p>
+        <div class="audience-chip">{{ __('ui.course.suitable_for', ['audience' => $course->target_audience ?: ucfirst($course->difficulty ?? 'beginner')]) }}</div>
     </section>
 
     <section class="section">
         <div class="syllabus-top">
-            <h2>Silabus / Kurikulum</h2>
-            <span class="duration">{{ $course->duration_text ?: 'Total Durasi: 10 Jam Video + Materi Praktik' }}</span>
+            <h2>{{ __('ui.course.syllabus_curriculum') }}</h2>
+            <span class="duration">{{ $course->duration_text ?: __('ui.course.frontend_duration') }}</span>
         </div>
 
         @foreach($syllabusItems as $index => $module)
@@ -520,7 +520,7 @@
     </section>
 
     <section class="section">
-        <h2>Learning Outcomes</h2>
+        <h2>{{ __('ui.course.learning_outcomes') }}</h2>
         <div class="outcomes">
             @foreach($outcomes as $outcome)
                 <div class="outcome"><span class="check">&#10003;</span><span>{{ $outcome }}</span></div>
@@ -529,24 +529,24 @@
     </section>
 
     <section class="section" id="review">
-        <h2>Review</h2>
+        <h2>{{ __('ui.course.review') }}</h2>
         <p>
-            Rating rata-rata:
+            {{ __('ui.course.average_rating') }}:
             <strong>{{ number_format((float) ($reviewSummary->avg_rating ?? 0), 1) }}/5</strong>
-            dari {{ (int) ($reviewSummary->total_reviews ?? 0) }} review.
+            {{ __('ui.course.from_reviews', ['count' => (int) ($reviewSummary->total_reviews ?? 0)]) }}
         </p>
 
         @if(!empty($isEnrolled))
             <form class="form-grid" action="{{ route('courses.reviews.store', ['slug' => 'quiz-'.$course->id]) }}" method="POST">
                 @csrf
                 <select name="rating" required>
-                    <option value="">Pilih rating</option>
+                    <option value="">{{ __('ui.course.choose_rating') }}</option>
                     @for($i = 5; $i >= 1; $i--)
-                        <option value="{{ $i }}" @selected((int) ($userReview->rating ?? 0) === $i)>{{ $i }} Star</option>
+                        <option value="{{ $i }}" @selected((int) ($userReview->rating ?? 0) === $i)>{{ __('ui.course.star', ['count' => $i]) }}</option>
                     @endfor
                 </select>
-                <textarea name="review_text" placeholder="Tulis review kamu (opsional)">{{ $userReview->review_text ?? '' }}</textarea>
-                <button type="submit">{{ !empty($userReview) ? 'Update Review' : 'Kirim Review' }}</button>
+                <textarea name="review_text" placeholder="{{ __('ui.course.review_placeholder') }}">{{ $userReview->review_text ?? '' }}</textarea>
+                <button type="submit">{{ !empty($userReview) ? __('ui.course.update_review') : __('ui.course.submit_review') }}</button>
             </form>
         @endif
 
@@ -554,24 +554,24 @@
             @forelse($reviews as $review)
                 <article class="item">
                     <div class="item-head">
-                        <span>{{ $reviewUsers[$review->user_id] ?? 'Student' }}</span>
+                        <span>{{ $reviewUsers[$review->user_id] ?? __('ui.course.student') }}</span>
                         <span class="rating">{{ str_repeat('★', (int) $review->rating) }}{{ str_repeat('☆', max(0, 5 - (int) $review->rating)) }}</span>
                     </div>
-                    <p>{{ $review->review_text ?: 'Memberi rating tanpa komentar.' }}</p>
+                    <p>{{ $review->review_text ?: __('ui.course.rating_without_comment') }}</p>
                 </article>
             @empty
-                <article class="item"><p>Belum ada review untuk course ini.</p></article>
+                <article class="item"><p>{{ __('ui.course.no_reviews') }}</p></article>
             @endforelse
         </div>
     </section>
 
     <div class="bottom-cta">
         @if(!empty($isEnrolled))
-            <a class="btn" href="{{ route('courses.quiz.roadmap', ['quiz' => $course->id]) }}">Continue Learning</a>
+            <a class="btn" href="{{ route('courses.quiz.roadmap', ['quiz' => $course->id]) }}">{{ __('ui.course.continue_learning') }}</a>
         @else
             <form action="{{ route('courses.quiz.enroll', ['quiz' => $course->id]) }}" method="POST" style="margin:0;">
                 @csrf
-                <button class="btn" type="submit" style="border:0; cursor:pointer;">Enroll Me</button>
+                <button class="btn" type="submit" style="border:0; cursor:pointer;">{{ __('ui.course.enroll_me') }}</button>
             </form>
         @endif
     </div>

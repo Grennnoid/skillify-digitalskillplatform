@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -729,15 +729,15 @@
     <div class="topbar">
         <div class="brand-wrap">
             <span class="brand-dot" aria-hidden="true"></span>
-            <span class="brand">Skillify</span>
+            <span class="brand">{{ __('ui.course.skillify') }}</span>
         </div>
         <div class="top-actions">
-            <a class="link" href="{{ route('courses.frontend-craft.info') }}">Course Info</a>
-            <a class="link" href="{{ route('student.dashboard') }}">Dashboard</a>
+            <a class="link" href="{{ route('courses.frontend-craft.info') }}">{{ __('ui.course.course_info') }}</a>
+            <a class="link" href="{{ route('student.dashboard') }}">{{ __('ui.course.dashboard') }}</a>
             <button class="attendance-trigger {{ !empty($attendance['enabled']) ? 'active' : '' }}" id="attendanceTrigger" type="button" aria-label="Consistent mode">&#128293;</button>
             <button class="favorite-btn {{ !empty($isFavorite) ? 'active' : '' }}" id="favoriteBtn" type="button" aria-pressed="{{ !empty($isFavorite) ? 'true' : 'false' }}" aria-label="Favorite course">{!! !empty($isFavorite) ? '&#9733;' : '&#9734;' !!}</button>
-            <a class="link" href="{{ route('courses.frontend-craft.info') }}#review">Review</a>
-            <a class="link" href="#qa" id="qaToggleLink">Q&A</a>
+            <a class="link" href="{{ route('courses.frontend-craft.info') }}#review">{{ __('ui.course.review') }}</a>
+            <a class="link" href="#qa" id="qaToggleLink">{{ __('ui.course.qa') }}</a>
 @php
     $nameParts = preg_split('/\s+/', trim(auth()->user()->name));
     $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1).substr($nameParts[1] ?? '', 0, 1));
@@ -762,11 +762,11 @@
                         <strong>{{ auth()->user()->name }}</strong>
                         <span>{{ auth()->user()->email }}</span>
                     </div>
-                    <a class="profile-item" href="{{ route('profile.show') }}">Profile Settings</a>
-                    <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">Switch Account</a>
+                    <a class="profile-item" href="{{ route('profile.show') }}">{{ __('ui.course.profile_settings') }}</a>
+                    <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">{{ __('ui.course.switch_account') }}</a>
                     <form action="{{ route('logout') }}" method="POST" class="profile-form">
                         @csrf
-                        <button type="submit" class="profile-item">Logout</button>
+                        <button type="submit" class="profile-item">{{ __('ui.course.logout') }}</button>
                     </form>
                 </div>
             </div>
@@ -776,22 +776,22 @@
     <section class="hero">
         <h1>{{ $roadmapTitle }}</h1>
         <div class="attendance-summary" id="attendanceSummary">
-            <span>Consistent Mode</span>
+            <span>{{ __('ui.course.consistent_mode') }}</span>
             <strong id="attendanceSummaryText">
                 @if(!empty($attendance['enabled']))
-                    {{ $attendance['today_completed'] }}/{{ $attendance['target_chapters'] }} chapter hari ini {{ !empty($attendance['today_attended']) ? '- Attendance counted' : '- Belum memenuhi target' }}
+                    {{ __('ui.course.chapter_today', ['completed' => $attendance['today_completed'], 'target' => $attendance['target_chapters']]) }} {{ !empty($attendance['today_attended']) ? '- '.__('ui.course.attendance_counted') : '- '.__('ui.course.target_not_met') }}
                 @else
-                    Belum aktif
+                    {{ __('ui.course.inactive') }}
                 @endif
             </strong>
         </div>
         @if(!empty($pendingPopQuiz))
             <div class="pop-quiz-alert">
                 <div>
-                    <strong>Pop Quiz unlocked after Chapter {{ $pendingPopQuiz['placement_after_chapter'] }}</strong>
-                    <span>Kamu harus menyelesaikan {{ $pendingPopQuiz['question_count'] }} soal ini dengan benar sebelum chapter berikutnya terbuka.</span>
+                    <strong>{{ __('ui.course.pop_quiz_after_chapter', ['chapter' => $pendingPopQuiz['placement_after_chapter']]) }}</strong>
+                    <span>{{ __('ui.course.pop_quiz_required', ['count' => $pendingPopQuiz['question_count']]) }}</span>
                 </div>
-                <a class="pop-quiz-btn" href="{{ $pendingPopQuiz['take_quiz_url'] }}">Take Quiz Now</a>
+                <a class="pop-quiz-btn" href="{{ $pendingPopQuiz['take_quiz_url'] }}">{{ __('ui.course.take_quiz_now') }}</a>
             </div>
         @endif
     </section>
@@ -807,21 +807,21 @@
                 @foreach(($chapters ?? []) as $chapter)
                     <li class="step {{ $chapter['position'] }} {{ !empty($chapter['is_completed']) ? 'completed' : '' }} {{ !empty($chapter['is_locked']) ? 'locked' : '' }}">
                         <a class="step-link {{ empty($chapter['href']) ? 'disabled' : '' }}" href="{{ $chapter['href'] ?? '#' }}">
-                            <div class="node"><div><small>STEP</small><strong>{{ str_pad((string) $chapter['number'], 2, '0', STR_PAD_LEFT) }}</strong></div></div>
+                            <div class="node"><div><small>{{ __('ui.course.step') }}</small><strong>{{ str_pad((string) $chapter['number'], 2, '0', STR_PAD_LEFT) }}</strong></div></div>
                             <article class="meta">
                                 <span class="tag">
                                     @if(!empty($chapter['is_completed']))
-                                        Completed
+                                        {{ __('ui.course.completed') }}
                                     @elseif(!empty($chapter['is_locked']))
-                                        Locked
+                                        {{ __('ui.course.locked') }}
                                     @else
-                                        {{ $chapter['video_ready'] ? 'Video Ready' : 'Chapter' }}
+                                        {{ $chapter['video_ready'] ? __('ui.course.video_ready') : __('ui.course.chapter') }}
                                     @endif
                                 </span>
                                 <h3>{{ $chapter['title'] }}</h3>
                                 <p>{{ $chapter['description'] }}</p>
                                 @if(!empty($chapter['pop_quiz']))
-                                    <span class="quiz-pill">{{ !empty($chapter['pop_quiz']['is_passed']) ? 'Pop Quiz Passed' : 'Pop Quiz Gate' }}</span>
+                                    <span class="quiz-pill">{{ !empty($chapter['pop_quiz']['is_passed']) ? __('ui.course.pop_quiz_passed') : __('ui.course.pop_quiz_gate') }}</span>
                                 @endif
                             </article>
                         </a>
@@ -834,50 +834,65 @@
 </div>
 
 <aside class="qa-drawer" id="qaDrawer">
-    <h3 style="margin:0;">Q&A Course</h3>
-    <p style="margin:6px 0 0;color:#9db1d6;font-size:13px;">Semua pertanyaan untuk {{ $roadmapTitle }} akan muncul di sini.</p>
+    <h3 style="margin:0;">{{ __('ui.course.qa_course') }}</h3>
+    <p style="margin:6px 0 0;color:#9db1d6;font-size:13px;">{{ __('ui.course.qa_course_text', ['course' => $roadmapTitle]) }}</p>
     <div class="qa-list">
         @forelse(($roadmapQuestions ?? []) as $qa)
             <article class="qa-item">
                 <div class="qa-item-head">
-                    <span>{{ $roadmapQuestionUsers[$qa->user_id] ?? 'Student' }}</span>
-                    <span>{{ $qa->chapter_number ? 'Chapter '.$qa->chapter_number : 'General' }}</span>
+                    <span>{{ $roadmapQuestionUsers[$qa->user_id] ?? __('ui.course.student') }}</span>
+                    <span>{{ $qa->chapter_number ? __('ui.course.chapter').' '.$qa->chapter_number : __('ui.course.general') }}</span>
                 </div>
                 <div style="font-size:14px;line-height:1.55;">{{ $qa->question_text }}</div>
                 @if(!empty($qa->answer_text))
-                    <div style="margin-top:6px;color:#c9e6ff;font-size:13px;"><strong>Jawaban dosen:</strong> {{ $qa->answer_text }}</div>
+                    <div style="margin-top:6px;color:#c9e6ff;font-size:13px;"><strong>{{ __('ui.course.lecturer_answer') }}:</strong> {{ $qa->answer_text }}</div>
                 @endif
             </article>
         @empty
-            <article class="qa-item">Belum ada pertanyaan.</article>
+            <article class="qa-item">{{ __('ui.course.no_questions') }}</article>
         @endforelse
     </div>
 </aside>
 
 <div class="modal-overlay" id="attendanceModal">
     <div class="attendance-modal">
-        <h3>Consistent Mode</h3>
-        <p>Kamu akan masuk ke mode kehadiran. Set target chapter harianmu, lalu sistem akan menghitung attendance begitu target itu terpenuhi.</p>
-        <label for="attendanceTargetInput">Target chapter per hari</label>
+        <h3>{{ __('ui.course.consistent_mode_heading') }}</h3>
+        <p>{{ __('ui.course.consistent_mode_text') }}</p>
+        <label for="attendanceTargetInput">{{ __('ui.course.target_chapters_per_day') }}</label>
         <input id="attendanceTargetInput" type="number" min="1" max="{{ count($chapters ?? []) }}" value="{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }}">
         <p id="attendanceProgressText">
             Hari ini: <strong>{{ (int)($attendance['today_completed'] ?? 0) }}/{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }}</strong>
             @if(!empty($attendance['today_attended']))
-                dan attendance sudah tercatat.
+                {{ __('ui.course.attendance_recorded') }}
             @else
-                dan attendance belum tercatat.
+                {{ __('ui.course.attendance_not_recorded') }}
             @endif
         </p>
         <div class="attendance-modal-actions">
-            <button class="modal-btn ghost" type="button" id="attendanceDisableBtn">Turn Off</button>
+            <button class="modal-btn ghost" type="button" id="attendanceDisableBtn">{{ __('ui.course.turn_off') }}</button>
             <div style="display:flex; gap:10px;">
-                <button class="modal-btn ghost" type="button" id="attendanceCloseBtn">Close</button>
-                <button class="modal-btn primary" type="button" id="attendanceSaveBtn">Save Target</button>
+                <button class="modal-btn ghost" type="button" id="attendanceCloseBtn">{{ __('ui.course.close') }}</button>
+                <button class="modal-btn primary" type="button" id="attendanceSaveBtn">{{ __('ui.course.save_target') }}</button>
             </div>
         </div>
         <div class="attendance-feedback" id="attendanceFeedback"></div>
     </div>
 </div>
+
+@php
+    $roadmapUi = [
+        'inactive' => __('ui.course.inactive'),
+        'attendanceCounted' => __('ui.course.attendance_counted'),
+        'targetNotMet' => __('ui.course.target_not_met'),
+        'chapterToday' => __('ui.course.chapter_today', ['completed' => '__completed__', 'target' => '__target__']),
+        'attendanceRecorded' => __('ui.course.attendance_recorded'),
+        'attendanceNotRecorded' => __('ui.course.attendance_not_recorded'),
+        'savingAttendance' => __('ui.course.saving_attendance'),
+        'failedConsistentMode' => __('ui.course.failed_consistent_mode'),
+        'savedConsistentMode' => __('ui.course.saved_consistent_mode'),
+        'errorConsistentMode' => __('ui.course.error_consistent_mode'),
+    ];
+@endphp
 
 <script>
     const timeline = document.getElementById('timeline');
@@ -897,6 +912,7 @@
     const attendanceFeedback = document.getElementById('attendanceFeedback');
     const attendanceSummaryText = document.getElementById('attendanceSummaryText');
     const attendanceProgressText = document.getElementById('attendanceProgressText');
+    const roadmapUi = @json($roadmapUi);
     let attendanceState = {!! $attendanceJson !!};
     let holdTimer = null;
 
@@ -997,12 +1013,12 @@
 
         if (attendanceSummaryText) {
             attendanceSummaryText.textContent = enabled
-                ? `${attendanceState.today_completed}/${attendanceState.target_chapters} chapter hari ini ${attendanceState.today_attended ? '- Attendance counted' : '- Belum memenuhi target'}`
-                : 'Belum aktif';
+                ? `${roadmapUi.chapterToday.replace('__completed__', attendanceState.today_completed).replace('__target__', attendanceState.target_chapters)} ${attendanceState.today_attended ? '- ' + roadmapUi.attendanceCounted : '- ' + roadmapUi.targetNotMet}`
+                : roadmapUi.inactive;
         }
 
         if (attendanceProgressText) {
-            attendanceProgressText.innerHTML = `Hari ini: <strong>${attendanceState.today_completed}/${attendanceState.target_chapters}</strong> ${attendanceState.today_attended ? 'dan attendance sudah tercatat.' : 'dan attendance belum tercatat.'}`;
+            attendanceProgressText.innerHTML = `{{ __('ui.course.current_day_progress', ['completed' => '__completed__', 'target' => '__target__', 'status' => '__status__']) }}`.replace('__completed__', attendanceState.today_completed).replace('__target__', attendanceState.target_chapters).replace('__status__', attendanceState.today_attended ? roadmapUi.attendanceRecorded : roadmapUi.attendanceNotRecorded);
         }
 
         if (attendanceTargetInput) {
@@ -1015,7 +1031,7 @@
             return;
         }
 
-        attendanceFeedback.textContent = 'Menyimpan setting attendance...';
+        attendanceFeedback.textContent = roadmapUi.savingAttendance;
         const formData = new FormData();
         formData.append('enabled', enabled ? '1' : '0');
         formData.append('target_chapters', attendanceTargetInput.value || '1');
@@ -1033,15 +1049,15 @@
 
             const data = await response.json();
             if (!response.ok) {
-                attendanceFeedback.textContent = data.message || 'Gagal menyimpan consistent mode.';
+                attendanceFeedback.textContent = data.message || roadmapUi.failedConsistentMode;
                 return;
             }
 
             attendanceState = data.attendance;
-            attendanceFeedback.textContent = data.message || 'Consistent mode berhasil disimpan.';
+            attendanceFeedback.textContent = data.message || roadmapUi.savedConsistentMode;
             renderAttendanceState();
         } catch (error) {
-            attendanceFeedback.textContent = 'Terjadi kendala saat menyimpan consistent mode.';
+            attendanceFeedback.textContent = roadmapUi.errorConsistentMode;
         }
     }
 

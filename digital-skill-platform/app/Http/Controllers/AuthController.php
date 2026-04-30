@@ -15,7 +15,7 @@ class AuthController extends Controller
     public function teachEntry()
     {
         if (!Auth::check()) {
-            return redirect()->route('register', ['role' => 'dosen']);
+            return redirect()->route('login', ['intent' => 'teach']);
         }
 
         $user = Auth::user();
@@ -47,7 +47,9 @@ class AuthController extends Controller
             return $this->redirectToDashboard(Auth::user()->role);
         }
 
-        return view('auth.login');
+        return view('auth.login', [
+            'loginIntent' => request()->query('intent'),
+        ]);
     }
 
     public function showRegister()
@@ -56,9 +58,7 @@ class AuthController extends Controller
             return $this->redirectToDashboard(Auth::user()->role);
         }
 
-        $preferredRole = request()->query('role') === 'dosen' ? 'dosen' : 'student';
-
-        return view('auth.register', compact('preferredRole'));
+        return view('auth.register');
     }
 
     public function showProfile()
@@ -152,30 +152,20 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:student,dosen'],
         ]);
-
-        $requestedRole = $validated['role'];
-        $effectiveRole = $requestedRole === 'dosen' ? 'student' : 'student';
-        $dosenRequestStatus = $requestedRole === 'dosen' ? 'pending' : 'none';
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $effectiveRole,
-            'requested_role' => $requestedRole,
-            'dosen_request_status' => $dosenRequestStatus,
+            'role' => 'student',
+            'requested_role' => null,
+            'dosen_request_status' => 'none',
             'account_status' => 'active',
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
-
-        if ($requestedRole === 'dosen') {
-            return redirect()->intended(route('dosen.pending-approval'))
-                ->with('success', 'Pengajuan akun dosen sudah dikirim. Tunggu persetujuan admin.');
-        }
 
         return redirect()->intended(route('student.dashboard'));
     }
@@ -211,9 +201,10 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'login_as' => ['required', 'in:student,dosen'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($request->only('email', 'password'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
@@ -226,8 +217,33 @@ class AuthController extends Controller
                 ])->onlyInput('email');
             }
 
+            $desiredRole = $credentials['login_as'];
+
+            if ($request->input('intent') === 'teach' || $desiredRole === 'dosen') {
+                if ($user->role === 'student') {
+                    return redirect()->route('teach.entry')
+                        ->with('success', 'Akun kamu sudah masuk. Sekarang kamu bisa lanjut ajukan akses dosen.');
+                }
+
+                return $this->redirectToDashboard($user->role);
+            }
+
             if ($user->role === 'admin') {
                 return redirect()->intended(route('admin.dashboard'));
+            }
+
+            if ($desiredRole === 'student') {
+                if ($user->role === 'dosen') {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    return back()->withErrors([
+                        'email' => 'Akun dosen tidak punya akses ke dashboard student. Pilih login sebagai dosen.',
+                    ])->onlyInput('email');
+                }
+
+                return redirect()->intended(route('student.dashboard'));
             }
 
             if ($user->role === 'dosen') {

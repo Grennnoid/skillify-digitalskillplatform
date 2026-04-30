@@ -61,6 +61,13 @@ Route::get('/', function () {
     ]);
 })->name('landing');
 
+Route::get('/locale/{locale}', function (string $locale) {
+    abort_unless(in_array($locale, ['en', 'id'], true), 404);
+    session(['locale' => $locale]);
+
+    return redirect()->back();
+})->name('locale.switch');
+
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'authenticate']);

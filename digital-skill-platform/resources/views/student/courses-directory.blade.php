@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courses | Skillify</title>
+    <title>{{ __('ui.student.courses_title') }}</title>
     <style>
         :root {
             --bg: #04070f;
@@ -253,21 +253,21 @@
 <body>
 <div class="container">
     <div class="topbar">
-        <div class="brand">Skillify Courses</div>
-        <a class="back" href="{{ route('student.dashboard') }}">Back To Dashboard</a>
+        <div class="brand">{{ __('ui.student.courses_brand') }}</div>
+        <a class="back" href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
     </div>
 
     <section class="hero">
-        <h1>Explore Courses</h1>
-        <p>Find the right path faster. Search by course title, category, or mentor.</p>
+        <h1>{{ __('ui.student.explore_courses') }}</h1>
+        <p>{{ __('ui.student.explore_courses_text') }}</p>
         <form class="search" method="GET" action="{{ route('student.courses') }}">
-            <input id="searchInput" type="text" name="q" value="{{ $search }}" placeholder="Search courses...">
-            <button type="submit">Search</button>
+            <input id="searchInput" type="text" name="q" value="{{ $search }}" placeholder="{{ __('ui.student.search_courses') }}">
+            <button type="submit">{{ __('ui.student.search') }}</button>
         </form>
     </section>
 
     @if(($courses ?? collect())->isEmpty())
-        <div class="empty">No matching courses found.</div>
+        <div class="empty">{{ __('ui.student.no_matching_courses') }}</div>
     @else
         <section class="grid" id="coursesGrid">
             @foreach($courses as $course)
@@ -279,7 +279,7 @@
                    @endif
                 >
                     <div class="content">
-                        <small>{{ $course['category'] ?? 'Course' }}</small>
+                        <small>{{ $course['category'] ?? __('ui.student.course_fallback_category') }}</small>
                         <h3>{{ $course['title'] }}</h3>
                         <p>{{ $course['description'] }}</p>
                     </div>

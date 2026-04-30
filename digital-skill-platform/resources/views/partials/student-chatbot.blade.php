@@ -417,20 +417,20 @@
 </style>
 
 <div class="skillify-chatbot" id="skillifyChatbot">
-    <button class="skillify-chatbot__launcher" id="skillifyChatbotLauncher" type="button" aria-label="Open AI chatbot">
+    <button class="skillify-chatbot__launcher" id="skillifyChatbotLauncher" type="button" aria-label="{{ __('ui.chatbot.open_label') }}">
         <span class="skillify-chatbot__launcher-core">AI</span>
     </button>
 
-    <section class="skillify-chatbot__panel" aria-live="polite" aria-label="Skillify chatbot">
+    <section class="skillify-chatbot__panel" aria-live="polite" aria-label="{{ __('ui.chatbot.panel_label') }}">
         <header class="skillify-chatbot__header">
             <div>
-                <span class="skillify-chatbot__eyebrow">Learning Copilot</span>
-                <h3 class="skillify-chatbot__title">{{ $chatbotSettings['name'] ?? 'Skillify AI' }}</h3>
+                <span class="skillify-chatbot__eyebrow">{{ __('ui.chatbot.eyebrow') }}</span>
+                <h3 class="skillify-chatbot__title">{{ $chatbotSettings['name'] ?? __('ui.chatbot.default_name') }}</h3>
             </div>
 
             <div class="skillify-chatbot__actions">
-                <button class="skillify-chatbot__ghost-btn" id="skillifyChatbotClear" type="button">New Chat</button>
-                <button class="skillify-chatbot__ghost-btn" id="skillifyChatbotClose" type="button">Close</button>
+                <button class="skillify-chatbot__ghost-btn" id="skillifyChatbotClear" type="button">{{ __('ui.chatbot.new_chat') }}</button>
+                <button class="skillify-chatbot__ghost-btn" id="skillifyChatbotClose" type="button">{{ __('ui.chatbot.close') }}</button>
             </div>
         </header>
 
@@ -445,18 +445,18 @@
                         class="skillify-chatbot__textarea"
                         id="skillifyChatbotInput"
                         rows="1"
-                        placeholder="{{ $chatbotSettings['placeholder'] ?? 'Ask about this course, chapter, or your study plan...' }}"
+                        placeholder="{{ $chatbotSettings['placeholder'] ?? __('ui.chatbot.default_placeholder') }}"
                         {{ empty($chatbotSettings['configured']) ? 'disabled' : '' }}
                     ></textarea>
                 </div>
                 <button class="skillify-chatbot__send" id="skillifyChatbotSend" type="submit" {{ empty($chatbotSettings['configured']) ? 'disabled' : '' }}>
-                    Send
+                    {{ __('ui.chatbot.send') }}
                 </button>
             </form>
 
             <div class="skillify-chatbot__footer-row">
                 <div class="skillify-chatbot__hint">
-                    {{ !empty($chatbotSettings['configured']) ? '' : 'Add DEEPSEEK_API_KEY in .env to activate the chatbot.' }}
+                    {{ !empty($chatbotSettings['configured']) ? '' : __('ui.chatbot.activation_hint') }}
                 </div>
                 <div class="skillify-chatbot__counter" id="skillifyChatbotCounter">0 / 3000</div>
             </div>
@@ -466,14 +466,30 @@
 
 @php
     $chatbotConfig = [
-        'name' => $chatbotSettings['name'] ?? 'Skillify AI',
-        'welcome' => $chatbotSettings['welcome'] ?? 'Hi, I am here to help with your courses, roadmap, and study questions.',
-        'placeholder' => $chatbotSettings['placeholder'] ?? 'Ask about this course, chapter, or your study plan...',
+        'name' => $chatbotSettings['name'] ?? __('ui.chatbot.default_name'),
+        'welcome' => $chatbotSettings['welcome'] ?? __('ui.chatbot.default_welcome'),
+        'placeholder' => $chatbotSettings['placeholder'] ?? __('ui.chatbot.default_placeholder'),
         'configured' => !empty($chatbotSettings['configured']),
         'historyUrl' => route('student.chatbot.history'),
         'sendUrl' => route('student.chatbot.send'),
         'clearUrl' => route('student.chatbot.clear'),
         'csrf' => csrf_token(),
+        'labels' => [
+            'suggestions' => [
+                __('ui.chatbot.suggestion_summary'),
+                __('ui.chatbot.suggestion_explain'),
+                __('ui.chatbot.suggestion_next'),
+                __('ui.chatbot.suggestion_progress'),
+            ],
+            'you' => __('ui.chatbot.you'),
+            'copy' => __('ui.chatbot.copy'),
+            'copied' => __('ui.chatbot.copied'),
+            'copyFailed' => __('ui.chatbot.copy_failed'),
+            'historyError' => __('ui.chatbot.history_error'),
+            'newChatError' => __('ui.chatbot.new_chat_error'),
+            'messageError' => __('ui.chatbot.message_error'),
+            'connectionError' => __('ui.chatbot.connection_error'),
+        ],
     ];
 @endphp
 
@@ -499,12 +515,7 @@
         let busy = false;
         let typingNode = null;
 
-        const defaultSuggestions = [
-            'Summarize this page for me',
-            'Explain the current lesson simply',
-            'What should I study next?',
-            'Check my progress here',
-        ];
+        const defaultSuggestions = config.labels.suggestions;
 
         function setOpen(open) {
             root.classList.toggle('open', open);
@@ -537,7 +548,7 @@
 
             const meta = document.createElement('div');
             meta.className = 'skillify-chatbot__meta';
-            meta.textContent = role === 'user' ? 'You' : config.name;
+            meta.textContent = role === 'user' ? config.labels.you : config.name;
 
             const timeLabel = formatTime(createdAt);
             if (timeLabel) {
@@ -550,15 +561,15 @@
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'skillify-chatbot__copy';
                 copyBtn.type = 'button';
-                copyBtn.textContent = 'Copy';
+                copyBtn.textContent = config.labels.copy;
                 copyBtn.addEventListener('click', async () => {
                     try {
                         await navigator.clipboard.writeText(content);
-                        copyBtn.textContent = 'Copied';
-                        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1300);
+                        copyBtn.textContent = config.labels.copied;
+                        setTimeout(() => { copyBtn.textContent = config.labels.copy; }, 1300);
                     } catch (error) {
-                        copyBtn.textContent = 'Failed';
-                        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1300);
+                        copyBtn.textContent = config.labels.copyFailed;
+                        setTimeout(() => { copyBtn.textContent = config.labels.copy; }, 1300);
                     }
                 });
                 meta.appendChild(copyBtn);
@@ -653,7 +664,7 @@
                 renderMessages(data.messages || []);
             } catch (error) {
                 renderEmptyState();
-                messages.appendChild(createBubble('assistant', 'I could not load the chat history right now.'));
+                messages.appendChild(createBubble('assistant', config.labels.historyError));
             }
         }
 
@@ -677,7 +688,7 @@
 
                 renderEmptyState();
             } catch (error) {
-                messages.appendChild(createBubble('assistant', 'I could not start a new chat right now.'));
+                messages.appendChild(createBubble('assistant', config.labels.newChatError));
                 scrollToBottom();
             }
         }
@@ -775,7 +786,7 @@
                 hideTyping();
 
                 if (!response.ok) {
-                    messages.appendChild(createBubble('assistant', data.message || 'I could not reply right now.'));
+                    messages.appendChild(createBubble('assistant', data.message || config.labels.messageError));
                     scrollToBottom();
                     return;
                 }
@@ -786,7 +797,7 @@
                 autosize();
             } catch (error) {
                 hideTyping();
-                messages.appendChild(createBubble('assistant', 'There was a connection problem while sending your message.'));
+                messages.appendChild(createBubble('assistant', config.labels.connectionError));
                 scrollToBottom();
             } finally {
                 busy = false;

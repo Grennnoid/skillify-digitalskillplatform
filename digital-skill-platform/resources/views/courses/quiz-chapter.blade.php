@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $course->title }} Chapter {{ $chapter }} | Skillify</title>
+    <title>{{ __('ui.course.chapter_page_title', ['course' => $course->title, 'chapter' => $chapter]) }}</title>
     <style>
         :root {
             --bg: #050914;
@@ -488,28 +488,34 @@
     }
 
     $hasCurrentVideo = (bool) ($lesson && ($lesson->video_path || $lesson->video_url));
-    $estimatedTime = $course->duration_text ?: ($hasCurrentVideo ? 'Video lesson ready' : 'Waiting for mentor update');
-    $mentorLabel = $chapterMentorName ?? ($course->mentor_name ?? 'Mentor not assigned yet');
+    $estimatedTime = $course->duration_text ?: ($hasCurrentVideo ? __('ui.course.video_lesson_ready') : __('ui.course.waiting_for_mentor_update'));
+    $mentorLabel = $chapterMentorName ?? ($course->mentor_name ?? __('ui.course.mentor_not_assigned'));
+    $chapterUi = [
+        'completed' => __('ui.course.completed'),
+        'locked' => __('ui.course.locked'),
+        'inProgress' => __('ui.course.in_progress'),
+        'openingNextChapter' => __('ui.course.opening_next_chapter'),
+    ];
 @endphp
 <header class="topbar">
     <div class="topbar-inner">
         <div class="brand-wrap">
-            <strong>{{ $course->title }} - Chapter {{ $chapter }}</strong>
-            <span>Learning mode • {{ $videoReadyCount }}/{{ $chaptersCount }} chapters with video</span>
+            <strong>{{ $course->title }} - {{ __('ui.course.chapter') }} {{ $chapter }}</strong>
+            <span>{{ __('ui.course.learning_mode') }} • {{ __('ui.course.chapters_with_video', ['ready' => $videoReadyCount, 'total' => $chaptersCount]) }}</span>
         </div>
         <div class="top-actions">
-            <a class="chip" href="{{ $roadmapUrl }}">Back To Roadmap</a>
-            <a class="chip" href="{{ $dashboardUrl }}">Dashboard</a>
+            <a class="chip" href="{{ $roadmapUrl }}">{{ __('ui.course.back_to_roadmap') }}</a>
+            <a class="chip" href="{{ $dashboardUrl }}">{{ __('ui.course.dashboard') }}</a>
         </div>
     </div>
 </header>
 
 <div class="wrap">
     <nav class="tabs">
-        <button class="tab-btn active" data-tab="course-content">Course Content</button>
-        <button class="tab-btn" data-tab="overview">Overview</button>
+        <button class="tab-btn active" data-tab="course-content">{{ __('ui.course.course_content') }}</button>
+        <button class="tab-btn" data-tab="overview">{{ __('ui.course.overview') }}</button>
         <button class="tab-btn" data-tab="qa">Q&A</button>
-        <button class="tab-btn" data-tab="notes">Notes</button>
+        <button class="tab-btn" data-tab="notes">{{ __('ui.course.notes') }}</button>
     </nav>
 
     <div class="content-grid">
@@ -521,10 +527,10 @@
                 @endif
 
                 <div class="meta-grid">
-                    <div class="stat"><strong>{{ ucfirst($course->difficulty ?? 'beginner') }}</strong><span class="muted">Skill Level</span></div>
-                    <div class="stat"><strong>{{ $chaptersCount }}</strong><span class="muted">Total Chapters</span></div>
-                    <div class="stat"><strong>{{ $estimatedTime }}</strong><span class="muted">Estimated Time</span></div>
-                    <div class="stat"><strong>{{ $mentorLabel }}</strong><span class="muted">Mentor</span></div>
+                    <div class="stat"><strong>{{ ucfirst($course->difficulty ?? 'beginner') }}</strong><span class="muted">{{ __('ui.course.skill_level') }}</span></div>
+                    <div class="stat"><strong>{{ $chaptersCount }}</strong><span class="muted">{{ __('ui.course.total_chapters') }}</span></div>
+                    <div class="stat"><strong>{{ $estimatedTime }}</strong><span class="muted">{{ __('ui.course.estimated_time') }}</span></div>
+                    <div class="stat"><strong>{{ $mentorLabel }}</strong><span class="muted">{{ __('ui.course.mentor') }}</span></div>
                 </div>
 
                 <div class="video-box">
@@ -535,105 +541,105 @@
                     @elseif($lesson && $lesson->video_url)
                         <iframe id="lessonYoutubePlayer" src="{{ $embedVideoUrl }}" allowfullscreen loading="lazy"></iframe>
                     @else
-                        <div class="placeholder">Video chapter belum diunggah. Silakan lanjut ke chapter lain atau tunggu update mentor.</div>
+                        <div class="placeholder">{{ __('ui.course.video_not_uploaded') }}</div>
                     @endif
                 </div>
 
                 <div class="lesson-actions">
                     <div class="left-actions">
                         @if($hasPrevious)
-                            <a class="chip" href="{{ $chapterPrevUrl }}">&larr; Chapter {{ $chapter - 1 }}</a>
+                            <a class="chip" href="{{ $chapterPrevUrl }}">&larr; {{ __('ui.course.chapter') }} {{ $chapter - 1 }}</a>
                         @endif
-                        <a class="chip" href="{{ $roadmapUrl }}">All Chapters</a>
+                        <a class="chip" href="{{ $roadmapUrl }}">{{ __('ui.course.all_chapters') }}</a>
                         @if($hasNext)
-                            <a class="chip" href="{{ $chapterNextUrl }}">Chapter {{ $chapter + 1 }} &rarr;</a>
+                            <a class="chip" href="{{ $chapterNextUrl }}">{{ __('ui.course.chapter') }} {{ $chapter + 1 }} &rarr;</a>
                         @endif
                     </div>
                     <div class="right-actions">
-                        <span class="badge" id="completionBadge">{{ !empty($isCurrentChapterCompleted) ? 'Completed' : ($hasCurrentVideo ? 'Watching' : 'Ready to unlock next') }}</span>
+                        <span class="badge" id="completionBadge">{{ !empty($isCurrentChapterCompleted) ? __('ui.course.completed') : ($hasCurrentVideo ? __('ui.course.watching') : __('ui.course.ready_to_unlock_next')) }}</span>
                     </div>
                 </div>
 
                 <div class="desc">
-                    {!! nl2br(e($lessonDescription ?? 'Deskripsi chapter belum tersedia.')) !!}
+                    {!! nl2br(e($lessonDescription ?? __('ui.course.chapter_default_description'))) !!}
                 </div>
 
                 <div class="callout">
-                    <h3>Schedule Learning Time</h3>
-                    <p class="muted">Belajar konsisten lebih efektif daripada maraton. Sisihkan 30-45 menit per hari untuk progress stabil.</p>
+                    <h3>{{ __('ui.course.schedule_learning_time') }}</h3>
+                    <p class="muted">{{ __('ui.course.schedule_learning_time_text') }}</p>
                     <p class="muted" style="margin-top:8px;" id="attendanceProgressLabel">
                         @if(!empty($attendance['enabled']))
-                            Consistent mode aktif: {{ (int)($attendance['today_completed'] ?? 0) }}/{{ max(1, (int)($attendance['target_chapters'] ?? 1)) }} chapter hari ini {{ !empty($attendance['today_attended']) ? '- attendance sudah tercatat.' : '- attendance belum tercatat.' }}
+                            {{ __('ui.course.consistent_mode_active', ['completed' => (int)($attendance['today_completed'] ?? 0), 'target' => max(1, (int)($attendance['target_chapters'] ?? 1))]) }} {{ !empty($attendance['today_attended']) ? '- '.__('ui.course.attendance_recorded') : '- '.__('ui.course.attendance_not_recorded') }}
                         @else
-                            Consistent mode belum aktif. Aktifkan dari roadmap page untuk mulai hitung kehadiran.
+                            {{ __('ui.course.attendance_not_active') }}
                         @endif
                     </p>
                 </div>
             </section>
 
             <section class="card panel" id="panel-overview">
-                <h1>{{ $course->title }} Overview</h1>
-                <p class="muted">{{ $course->about ?: 'Course overview belum diisi oleh mentor untuk course ini.' }}</p>
+                <h1>{{ __('ui.course.overview_title', ['course' => $course->title]) }}</h1>
+                <p class="muted">{{ $course->about ?: __('ui.course.chapter_builder_missing') }}</p>
                 <div class="meta-grid">
-                    <div class="stat"><strong>{{ ucfirst($course->difficulty ?? 'beginner') }}</strong><span class="muted">Level</span></div>
-                    <div class="stat"><strong>{{ $course->category ?? 'General' }}</strong><span class="muted">Category</span></div>
-                    <div class="stat"><strong>{{ $chaptersCount }}</strong><span class="muted">Chapters</span></div>
-                    <div class="stat"><strong>{{ \Illuminate\Support\Carbon::parse($course->updated_at ?? $course->created_at)->format('d M Y') }}</strong><span class="muted">Updated</span></div>
+                    <div class="stat"><strong>{{ ucfirst($course->difficulty ?? 'beginner') }}</strong><span class="muted">{{ __('ui.course.level') }}</span></div>
+                    <div class="stat"><strong>{{ $course->category ?? __('ui.course.general') }}</strong><span class="muted">{{ __('ui.course.category') }}</span></div>
+                    <div class="stat"><strong>{{ $chaptersCount }}</strong><span class="muted">{{ __('ui.course.total_chapters') }}</span></div>
+                    <div class="stat"><strong>{{ \Illuminate\Support\Carbon::parse($course->updated_at ?? $course->created_at)->format('d M Y') }}</strong><span class="muted">{{ __('ui.course.updated') }}</span></div>
                 </div>
             </section>
 
             <section class="card panel" id="panel-qa">
-                <h1>Q&A</h1>
-                <p class="muted">Pertanyaan kamu dikirim ke dosen dan juga tampil di sini agar diskusi per chapter tetap rapi.</p>
+                <h1>{{ __('ui.course.qa_title') }}</h1>
+                <p class="muted">{{ __('ui.course.qa_text') }}</p>
                 <form class="qa-form" action="{{ $qaPostUrl }}" method="POST">
                     @csrf
                     <input type="hidden" name="chapter_number" value="{{ $chapter }}">
-                    <textarea name="question_text" placeholder="Tulis pertanyaan untuk dosen tentang chapter ini" required></textarea>
-                    <button type="submit">Kirim Pertanyaan</button>
+                    <textarea name="question_text" placeholder="{{ __('ui.course.qa_placeholder') }}" required></textarea>
+                    <button type="submit">{{ __('ui.course.send_question') }}</button>
                 </form>
                 <div class="qa-list">
                     @forelse($qaItems as $qa)
                         <article class="qa-item">
                             <div class="qa-item-head">
-                                <span>{{ $qaUsers[$qa->user_id] ?? 'Student' }}</span>
-                                <span>{{ $qa->chapter_number ? 'Chapter '.$qa->chapter_number : 'General' }}</span>
+                                <span>{{ $qaUsers[$qa->user_id] ?? __('ui.course.student') }}</span>
+                                <span>{{ $qa->chapter_number ? __('ui.course.chapter').' '.$qa->chapter_number : __('ui.course.general') }}</span>
                             </div>
                             <div>{{ $qa->question_text }}</div>
                             @if(!empty($qa->answer_text))
-                                <div style="margin-top:6px;color:#cde6ff;"><strong>Jawaban dosen:</strong> {{ $qa->answer_text }}</div>
+                                <div style="margin-top:6px;color:#cde6ff;"><strong>{{ __('ui.course.lecturer_answer') }}:</strong> {{ $qa->answer_text }}</div>
                             @endif
                         </article>
                     @empty
-                        <article class="qa-item">Belum ada pertanyaan untuk chapter ini.</article>
+                        <article class="qa-item">{{ __('ui.course.no_questions_chapter') }}</article>
                     @endforelse
                 </div>
             </section>
 
             <section class="card panel notes-box" id="panel-notes">
-                <h1>Notes</h1>
-                <p class="muted">Catatan disimpan otomatis di browser perangkat ini.</p>
-                <textarea id="notesField" placeholder="Tulis insight, ringkasan, atau to-do setelah nonton chapter ini..."></textarea>
+                <h1>{{ __('ui.course.notes_title') }}</h1>
+                <p class="muted">{{ __('ui.course.notes_text') }}</p>
+                <textarea id="notesField" placeholder="{{ __('ui.course.notes_placeholder') }}"></textarea>
             </section>
         </main>
 
         <aside class="card chapter-rail">
-            <h3 style="margin:0;">Course Content</h3>
-            <p class="muted" style="margin:6px 0 0;">Progress <span id="progressText">0/{{ $chaptersCount }}</span> chapters completed</p>
+            <h3 style="margin:0;">{{ __('ui.course.course_content') }}</h3>
+            <p class="muted" style="margin:6px 0 0;">{{ __('ui.course.progress_completed', ['completed' => '0', 'total' => $chaptersCount]) }}</p>
             <div class="chapter-list">
                 @foreach($chapterItems as $item)
                     <a class="chapter-item {{ $item['number'] === $chapter ? 'active' : '' }} {{ !empty($item['is_completed']) ? 'completed' : '' }} {{ !empty($item['is_locked']) ? 'locked' : '' }}" href="{{ $item['href'] ?? '#' }}" data-chapter-number="{{ $item['number'] }}" data-locked="{{ !empty($item['is_locked']) ? 'true' : 'false' }}">
                         <div class="status-row">
-                            <strong>Chapter {{ str_pad((string) $item['number'], 2, '0', STR_PAD_LEFT) }}</strong>
-                            <span class="badge">{{ $item['has_video'] ? 'Video' : 'No Video' }}</span>
+                            <strong>{{ __('ui.course.chapter') }} {{ str_pad((string) $item['number'], 2, '0', STR_PAD_LEFT) }}</strong>
+                            <span class="badge">{{ $item['has_video'] ? __('ui.course.video') : __('ui.course.no_video') }}</span>
                         </div>
                         <span>{{ $item['title'] }}</span>
                         <small class="chapter-complete-text">
                             @if(!empty($item['is_completed']))
-                                Completed
+                                {{ __('ui.course.completed') }}
                             @elseif(!empty($item['is_locked']))
-                                Locked
+                                {{ __('ui.course.locked') }}
                             @else
-                                In progress
+                                {{ __('ui.course.in_progress') }}
                             @endif
                         </small>
                     </a>
@@ -646,12 +652,12 @@
 @if(!empty($pendingPopQuizPrompt))
     <div class="quiz-gate-overlay open" id="quizGateOverlay">
         <div class="quiz-gate-modal">
-            <h3>Pop Quiz Unlocked</h3>
-            <p>Kamu baru membuka pop quiz setelah Chapter {{ $pendingPopQuizPrompt['placement_after_chapter'] }}. Sebelum lanjut ke chapter berikutnya, kamu harus menjawab {{ $pendingPopQuizPrompt['question_count'] }} soal ini dengan benar.</p>
+            <h3>{{ __('ui.course.pop_quiz_unlocked') }}</h3>
+            <p>{{ __('ui.course.pop_quiz_unlock_text', ['chapter' => $pendingPopQuizPrompt['placement_after_chapter'], 'count' => $pendingPopQuizPrompt['question_count']]) }}</p>
             <div class="quiz-gate-actions">
-                <a class="quiz-gate-btn primary" href="{{ $pendingPopQuizPrompt['take_quiz_url'] }}">Do Quiz Now</a>
-                <a class="quiz-gate-btn ghost" href="{{ $dashboardUrl }}">Back To Dashboard</a>
-                <a class="quiz-gate-btn ghost" href="{{ $roadmapUrl }}">Back To Roadmap</a>
+                <a class="quiz-gate-btn primary" href="{{ $pendingPopQuizPrompt['take_quiz_url'] }}">{{ __('ui.course.do_quiz_now') }}</a>
+                <a class="quiz-gate-btn ghost" href="{{ $dashboardUrl }}">{{ __('ui.course.back_to_dashboard') }}</a>
+                <a class="quiz-gate-btn ghost" href="{{ $roadmapUrl }}">{{ __('ui.course.back_to_roadmap') }}</a>
             </div>
         </div>
     </div>
@@ -692,11 +698,13 @@
     const videoElement = document.querySelector('video');
     const iframeElement = document.querySelector('iframe');
     const quizGateOverlay = document.getElementById('quizGateOverlay');
+    const chapterUi = @json($chapterUi);
+    const progressTemplate = @json(__('ui.course.progress_completed', ['completed' => '__completed__', 'total' => $chaptersCount]));
     let youtubeFallbackTimer = null;
 
     function updateProgressSummary() {
         const completedItems = chapterLinks.filter((link) => link.classList.contains('completed'));
-        progressText.textContent = `${completedItems.length}/{{ $chaptersCount }}`;
+        progressText.textContent = progressTemplate.replace('__completed__', completedItems.length).replace('__total__', '{{ $chaptersCount }}');
     }
 
     function markChapterCompletedUi(chapterNumber) {
@@ -710,7 +718,7 @@
         link.dataset.locked = 'false';
         const text = link.querySelector('.chapter-complete-text');
         if (text) {
-            text.textContent = 'Completed';
+            text.textContent = chapterUi.completed;
         }
     }
 
@@ -723,8 +731,8 @@
         link.classList.remove('locked');
         link.dataset.locked = 'false';
         const text = link.querySelector('.chapter-complete-text');
-        if (text && text.textContent.trim() === 'Locked') {
-            text.textContent = 'In progress';
+        if (text && text.textContent.trim() === chapterUi.locked) {
+            text.textContent = chapterUi.inProgress;
         }
     }
 
@@ -734,7 +742,7 @@
         }
 
         navigatingChapter = true;
-        completionBadge.textContent = 'Opening next chapter...';
+        completionBadge.textContent = chapterUi.openingNextChapter;
         window.location.href = completionUrl;
     }
 

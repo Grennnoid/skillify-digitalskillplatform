@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard | Skillify</title>
+    <title>{{ __('ui.student.dashboard_title') }}</title>
     <style>
         :root {
             --bg: #04070f;
@@ -46,6 +46,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
+            position: relative;
         }
 
         .brand {
@@ -69,6 +70,159 @@
             gap: 22px;
             flex-wrap: wrap;
             align-items: center;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(8, 14, 28, 0.88);
+            color: #e8f2ff;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        .mobile-menu-toggle span,
+        .mobile-menu-toggle::before,
+        .mobile-menu-toggle::after {
+            content: "";
+            display: block;
+            width: 18px;
+            height: 2px;
+            border-radius: 999px;
+            background: currentColor;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .mobile-menu-toggle {
+            position: relative;
+        }
+
+        .mobile-menu-toggle span {
+            position: absolute;
+        }
+
+        .mobile-menu-toggle::before {
+            position: absolute;
+            transform: translateY(-6px);
+        }
+
+        .mobile-menu-toggle::after {
+            position: absolute;
+            transform: translateY(6px);
+        }
+
+        .mobile-menu-toggle.open span {
+            opacity: 0;
+        }
+
+        .mobile-menu-toggle.open::before {
+            transform: rotate(45deg);
+        }
+
+        .mobile-menu-toggle.open::after {
+            transform: rotate(-45deg);
+        }
+
+        .mobile-nav-panel {
+            display: none;
+            width: min(360px, calc(100vw - 18px));
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(8, 14, 28, 0.96);
+            box-shadow: var(--shadow);
+            padding: 14px;
+            gap: 14px;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            z-index: 60;
+            max-height: min(72vh, 560px);
+            overflow: auto;
+            scrollbar-width: none;
+        }
+
+        .mobile-nav-panel::-webkit-scrollbar {
+            display: none;
+        }
+
+        .mobile-nav-panel.open {
+            display: grid;
+        }
+
+        .mobile-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .mobile-nav-link,
+        .mobile-nav-action {
+            width: 100%;
+            display: block;
+            text-align: left;
+            text-decoration: none;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 11px 12px;
+            background: rgba(12, 18, 34, 0.82);
+            color: #dbe6ff;
+            font-size: 14px;
+        }
+
+        .mobile-nav-action {
+            cursor: pointer;
+        }
+
+        .mobile-nav-link:hover,
+        .mobile-nav-action:hover {
+            border-color: rgba(121, 240, 212, 0.46);
+            color: #ffffff;
+        }
+
+        .mobile-nav-group {
+            border: 1px solid rgba(160, 181, 222, 0.18);
+            border-radius: 14px;
+            padding: 12px;
+            background: rgba(10, 16, 30, 0.72);
+        }
+
+        .mobile-nav-group h4 {
+            margin: 0 0 10px;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #a8c0ea;
+        }
+
+        .mobile-nav-stack {
+            display: grid;
+            gap: 8px;
+        }
+
+        .mobile-nav-user {
+            display: grid;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .mobile-nav-user strong {
+            font-size: 16px;
+        }
+
+        .mobile-nav-user span {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .mobile-nav-empty {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 4px 2px 0;
         }
 
         .menu a, .menu button {
@@ -577,10 +731,51 @@
         }
 
         @media (max-width: 700px) {
+            .nav {
+                align-items: center;
+            }
             .menu { display: none; }
+            .mobile-menu-toggle { display: inline-flex; }
             .slider { padding-inline: calc((100vw - 78vw) / 2); }
             .card { flex-basis: 78vw; height: 320px; }
             .hero { margin-top: 40px; }
+        }
+
+        @media (max-width: 520px) {
+            .nav,
+            .hero,
+            .lower,
+            .site-footer {
+                width: min(100%, calc(100vw - 18px));
+            }
+
+            .brand {
+                font-size: 18px;
+            }
+
+            .brand span {
+                width: 18px;
+                margin-left: 6px;
+            }
+
+            .hero h1 {
+                font-size: 33px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .mobile-nav-panel {
+                width: calc(100vw - 18px);
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .mobile-nav-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
         }
 
         .site-footer {
@@ -602,34 +797,37 @@
         </div>
     @endif
     <header class="nav">
-        <div class="brand">Skillify<span></span></div>
+        <div class="brand">{{ __('ui.course.skillify') }}<span></span></div>
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mobileNavPanel">
+            <span></span>
+        </button>
         <nav class="menu">
-            <a href="{{ route('student.courses') }}">Courses</a>
-            <a href="{{ route('student.mentors') }}">Mentors</a>
+            <a href="{{ route('student.courses') }}">{{ __('ui.student.courses') }}</a>
+            <a href="{{ route('student.mentors') }}">{{ __('ui.student.mentors') }}</a>
             <div class="progress-menu" id="progressMenu">
-                <button class="progress-trigger" id="progressTrigger" type="button" aria-expanded="false">Progress</button>
+                <button class="progress-trigger" id="progressTrigger" type="button" aria-expanded="false">{{ __('ui.student.progress') }}</button>
                 <div class="progress-dropdown">
-                    <button class="progress-item" type="button">Weekly Progress: 64%</button>
-                    <button class="progress-item" type="button">Lessons Completed: 8</button>
-                    <button class="progress-item" type="button">Badges: 3</button>
+                    <button class="progress-item" type="button">{{ __('ui.student.weekly_progress') }}: 64%</button>
+                    <button class="progress-item" type="button">{{ __('ui.student.lessons_completed') }}: 8</button>
+                    <button class="progress-item" type="button">{{ __('ui.student.badges') }}: 3</button>
                 </div>
             </div>
             <div class="my-courses-menu" id="myCoursesMenu">
-                <button class="my-courses-trigger" id="myCoursesTrigger" type="button" aria-expanded="false">My Courses</button>
+                <button class="my-courses-trigger" id="myCoursesTrigger" type="button" aria-expanded="false">{{ __('ui.student.my_courses') }}</button>
                 <div class="my-courses-dropdown">
                     @forelse(($enrolledCourses ?? []) as $course)
                         <a class="my-courses-item" href="{{ $course['roadmap_route'] }}">{{ $course['title'] }}</a>
                     @empty
-                        <div class="my-courses-empty">Belum ada course terdaftar.</div>
+                        <div class="my-courses-empty">{{ __('ui.student.no_enrolled_courses') }}</div>
                     @endforelse
                 </div>
             </div>
             <div class="home-menu" id="homeMenu">
-                <button class="home-trigger" id="homeTrigger" type="button" aria-expanded="false">Home</button>
+                <button class="home-trigger" id="homeTrigger" type="button" aria-expanded="false">{{ __('ui.student.home') }}</button>
                 <div class="home-dropdown">
-                    <a class="home-item" href="{{ route('landing') }}">Go To Landing</a>
-                    <a class="home-item" href="{{ route('student.dashboard') }}">Student Dashboard</a>
-                    <a class="home-item" href="{{ route('profile.show') }}">Profile</a>
+                    <a class="home-item" href="{{ route('landing') }}">{{ __('ui.student.landing_page') }}</a>
+                    <a class="home-item" href="{{ route('student.dashboard') }}">{{ __('ui.student.dashboard') }}</a>
+                    <a class="home-item" href="{{ route('profile.show') }}">{{ __('ui.student.profile') }}</a>
                 </div>
             </div>
             @php
@@ -641,7 +839,7 @@
             <div class="profile-menu" id="profileMenuStudent">
                 <a class="profile-trigger" href="{{ route('profile.show') }}" id="profileTriggerStudent" aria-expanded="false">
                     @if($profileImageUrl)
-                        <img src="{{ $profileImageUrl }}" alt="Profile picture" class="profile-image">
+                        <img src="{{ $profileImageUrl }}" alt="{{ __('ui.student.profile') }}" class="profile-image">
                     @else
                         {{ $initials }}
                     @endif
@@ -651,20 +849,69 @@
                         <strong>{{ auth()->user()->name }}</strong>
                         <span>{{ auth()->user()->email }}</span>
                     </div>
-                    <a class="profile-item" href="{{ route('profile.show') }}">Profile Settings</a>
-                    <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">Switch Account</a>
+                    <a class="profile-item" href="{{ route('profile.show') }}">{{ __('ui.student.profile_settings') }}</a>
+                    <a class="profile-item" href="{{ route('login', ['switch' => 1]) }}">{{ __('ui.student.switch_account') }}</a>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="profile-item">Logout</button>
+                        <button type="submit" class="profile-item">{{ __('ui.student.logout') }}</button>
                     </form>
                 </div>
             </div>
         </nav>
+        @php
+            $weeklyProgress = 64;
+            $lessonsCompleted = 8;
+            $badgeCount = 3;
+        @endphp
+        <section class="mobile-nav-panel" id="mobileNavPanel">
+            <div class="mobile-nav-grid">
+                <a class="mobile-nav-link" href="{{ route('student.courses') }}">{{ __('ui.student.courses') }}</a>
+                <a class="mobile-nav-link" href="{{ route('student.mentors') }}">{{ __('ui.student.mentors') }}</a>
+                <a class="mobile-nav-link" href="{{ route('landing') }}">{{ __('ui.student.landing_page') }}</a>
+                <a class="mobile-nav-link" href="{{ route('student.dashboard') }}">{{ __('ui.student.dashboard') }}</a>
+                <a class="mobile-nav-link" href="{{ route('profile.show') }}">{{ __('ui.student.profile') }}</a>
+                <a class="mobile-nav-link" href="{{ route('login', ['switch' => 1]) }}">{{ __('ui.student.switch_account') }}</a>
+            </div>
+
+            <div class="mobile-nav-group">
+                <h4>{{ __('ui.student.my_courses') }}</h4>
+                <div class="mobile-nav-stack">
+                    @forelse(($enrolledCourses ?? []) as $course)
+                        <a class="mobile-nav-link" href="{{ $course['roadmap_route'] }}">{{ $course['title'] }}</a>
+                    @empty
+                        <div class="mobile-nav-empty">{{ __('ui.student.no_enrolled_courses') }}</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="mobile-nav-group">
+                <h4>{{ __('ui.student.progress') }}</h4>
+                <div class="mobile-nav-stack">
+                    <div class="mobile-nav-link">{{ __('ui.student.weekly_progress') }}: {{ $weeklyProgress }}%</div>
+                    <div class="mobile-nav-link">{{ __('ui.student.lessons_completed') }}: {{ $lessonsCompleted }}</div>
+                    <div class="mobile-nav-link">{{ __('ui.student.badges') }}: {{ $badgeCount }}</div>
+                </div>
+            </div>
+
+            <div class="mobile-nav-group">
+                <h4>{{ __('ui.student.profile') }}</h4>
+                <div class="mobile-nav-user">
+                    <strong>{{ auth()->user()->name }}</strong>
+                    <span>{{ auth()->user()->email }}</span>
+                </div>
+                <div class="mobile-nav-stack">
+                    <form action="{{ route('logout') }}" method="POST" style="margin:0;">
+                        @csrf
+                        <button type="submit" class="mobile-nav-action">{{ __('ui.student.logout') }}</button>
+                    </form>
+                </div>
+            </div>
+        </section>
     </header>
 
     <section class="hero">
-        <h1>Selected and popular courses to grow your digital skills</h1>
-        <p>Hi {{ auth()->user()->name }}, pilih jalur belajarmu dan lanjutkan progressmu hari ini. Belajar terasa lebih visual, lebih fokus, dan lebih seru.</p>
+        <h1>{{ __('ui.student.hero_title') }}</h1>
+        <p>{{ __('ui.student.hero_subtitle', ['name' => auth()->user()->name]) }}</p>
     </section>
 
     <section class="slider-shell">
@@ -689,7 +936,7 @@
                         <small>{{ $course['category'] }}</small>
                         <h3>{{ $course['title'] }}</h3>
                         <p>{{ $course['description'] }}</p>
-                        <p><a class="card-link" href="{{ $course['href'] }}"><strong>View Course -&gt;</strong></a></p>
+                        <p><a class="card-link" href="{{ $course['href'] }}"><strong>{{ __('ui.student.view_course') }} -&gt;</strong></a></p>
                     </div>
                 </article>
             @endforeach
@@ -699,20 +946,20 @@
     
     <section class="lower">
         <article class="panel">
-            <h4>Continue Learning</h4>
-            <p>You are currently on track. Keep your momentum with the next module from Frontend Craft.</p>
+            <h4>{{ __('ui.student.continue_learning_title') }}</h4>
+            <p>{{ __('ui.student.continue_learning_text') }}</p>
             <div class="progress-track"><div class="progress-fill"></div></div>
-            <p style="margin-top: 8px;">Progress: 64% complete</p>
+            <p style="margin-top: 8px;">{{ __('ui.student.progress_complete', ['percent' => 64]) }}</p>
         </article>
 
         <article class="panel">
-            <h4>Weekly Focus</h4>
-            <p>Complete 2 lessons and 1 mini-quiz this week to unlock your next achievement badge.</p>
+            <h4>{{ __('ui.student.weekly_focus_title') }}</h4>
+            <p>{{ __('ui.student.weekly_focus_text') }}</p>
         </article>
     </section>
 
     <footer class="site-footer">
-        <p>&copy; {{ date('Y') }} Skillify. Keep learning, keep growing.</p>
+        <p>&copy; {{ date('Y') }} {{ __('ui.student.footer') }}</p>
     </footer>
 </div>
 
@@ -783,6 +1030,8 @@
 
     const profileMenu = document.getElementById('profileMenuStudent');
     const profileTrigger = document.getElementById('profileTriggerStudent');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileNavPanel = document.getElementById('mobileNavPanel');
     const myCoursesMenu = document.getElementById('myCoursesMenu');
     const myCoursesTrigger = document.getElementById('myCoursesTrigger');
     const progressMenu = document.getElementById('progressMenu');
@@ -804,6 +1053,38 @@
             }
             menu.classList.remove('open');
             trigger.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function closeMobileMenu() {
+        if (!mobileNavPanel || !mobileMenuToggle) {
+            return;
+        }
+
+        mobileNavPanel.classList.remove('open');
+        mobileMenuToggle.classList.remove('open');
+        mobileMenuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (mobileMenuToggle && mobileNavPanel) {
+        mobileMenuToggle.addEventListener('click', function (event) {
+            event.stopPropagation();
+            const willOpen = !mobileNavPanel.classList.contains('open');
+            mobileNavPanel.classList.toggle('open', willOpen);
+            mobileMenuToggle.classList.toggle('open', willOpen);
+            mobileMenuToggle.setAttribute('aria-expanded', String(willOpen));
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!mobileNavPanel.contains(event.target) && !mobileMenuToggle.contains(event.target)) {
+                closeMobileMenu();
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 700) {
+                closeMobileMenu();
+            }
         });
     }
 
@@ -884,4 +1165,3 @@
 @include('partials.student-chatbot')
 </body>
 </html>
-

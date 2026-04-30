@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dosen Dashboard | Skillify</title>
+    <title>{{ __('ui.dosen_dashboard.title_page') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -27,12 +27,14 @@
                 radial-gradient(1200px 620px at 15% -18%, rgba(69, 208, 255, 0.2), transparent 60%),
                 radial-gradient(900px 480px at 85% -20%, rgba(124, 246, 214, 0.18), transparent 56%),
                 linear-gradient(180deg, #050911 0%, #060a12 100%);
+            overflow-x: hidden;
         }
 
         .layout {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 280px minmax(0, 1fr);
+            width: 100%;
         }
 
         .sidebar {
@@ -43,6 +45,8 @@
             top: 0;
             height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
+            min-width: 0;
         }
 
         .brand {
@@ -127,7 +131,44 @@
 
         .side-actions { display: grid; gap: 8px; }
 
-        .content { padding: 22px; }
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px;
+            background: rgba(14, 23, 42, 0.72);
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 0 8px;
+        }
+
+        .locale-switcher a {
+            min-width: 36px;
+            text-align: center;
+            text-decoration: none;
+            color: #d8e7ff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 10px;
+            border-radius: 999px;
+        }
+
+        .locale-switcher a.active {
+            color: #07121f;
+            background: linear-gradient(120deg, var(--primary), var(--secondary));
+        }
+
+        .content {
+            padding: 22px;
+            min-width: 0;
+            overflow-x: hidden;
+        }
 
         .topbar h1 {
             margin: 0;
@@ -562,18 +603,30 @@
                 height: auto;
                 border-right: 0;
                 border-bottom: 1px solid var(--line);
+                padding: 14px;
             }
             .nav { grid-template-columns: 1fr 1fr; }
+            .content { padding: 16px; }
+            .side-actions { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 640px) {
             .nav { grid-template-columns: 1fr; }
             .kpi { grid-template-columns: 1fr; }
             .question-bank-summary { grid-template-columns: 1fr; }
+            .sidebar { padding: 12px; }
+            .content { padding: 12px 10px 16px; }
+            .nav-btn,
+            .btn { width: 100%; }
+            .table-wrap {
+                margin-left: -2px;
+                margin-right: -2px;
+            }
         }
     </style>
 </head>
 <body>
+@php($dosenUi = __('ui.dosen_dashboard'))
 <div class="layout">
     <aside class="sidebar">
         @php
@@ -585,7 +638,13 @@
 
         <div class="brand">
             <span class="dot"></span>
-            <span>Dosen Workspace</span>
+            <span>{{ $dosenUi['dashboard'] }}</span>
+        </div>
+
+        <div class="locale-switcher">
+            <span>{{ __('ui.locale.switch') }}</span>
+            <a href="{{ route('locale.switch', ['locale' => 'en']) }}" class="{{ app()->getLocale() === 'en' ? 'active' : '' }}">{{ __('ui.locale.en') }}</a>
+            <a href="{{ route('locale.switch', ['locale' => 'id']) }}" class="{{ app()->getLocale() === 'id' ? 'active' : '' }}">{{ __('ui.locale.id') }}</a>
         </div>
 
         <div class="side-meta">
@@ -601,32 +660,32 @@
                     <strong style="color:#e8f1ff;">{{ auth()->user()->name }}</strong>
                 </div>
             </div>
-            Login as <strong>{{ auth()->user()->name }}</strong><br>
-            Role: <strong>{{ strtoupper(auth()->user()->role) }}</strong>
+            {{ $dosenUi['login_as'] }} <strong>{{ auth()->user()->name }}</strong><br>
+            {{ $dosenUi['role'] }}: <strong>{{ strtoupper(auth()->user()->role) }}</strong>
         </div>
 
         <nav class="nav" id="sideNavDosen">
-            <button class="nav-btn active" data-target="manage-courses">Kelola Course</button>
-            <button class="nav-btn" data-target="manage-quiz">Kelola Quiz</button>
-            <button class="nav-btn" data-target="scores">Lihat Nilai</button>
-            <button class="nav-btn" data-target="qa-inbox">Q&A Siswa</button>
-            <button class="nav-btn" data-target="analytics">Analytics</button>
+            <button class="nav-btn active" data-target="manage-courses">{{ $dosenUi['manage_courses'] }}</button>
+            <button class="nav-btn" data-target="manage-quiz">{{ $dosenUi['manage_quiz'] }}</button>
+            <button class="nav-btn" data-target="scores">{{ $dosenUi['scores'] }}</button>
+            <button class="nav-btn" data-target="qa-inbox">{{ $dosenUi['qa_inbox'] }}</button>
+            <button class="nav-btn" data-target="analytics">{{ $dosenUi['analytics'] }}</button>
         </nav>
 
         <div class="side-actions">
-            <a class="btn btn-ghost" href="{{ route('profile.show') }}">Profile</a>
-            <a class="btn btn-ghost" href="{{ route('landing') }}">Back To Landing</a>
+            <a class="btn btn-ghost" href="{{ route('profile.show') }}">{{ $dosenUi['profile'] }}</a>
+            <a class="btn btn-ghost" href="{{ route('landing') }}">{{ $dosenUi['back_to_landing'] }}</a>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button class="btn btn-danger" type="submit" style="width:100%;">Logout</button>
+                <button class="btn btn-danger" type="submit" style="width:100%;">{{ $dosenUi['logout'] }}</button>
             </form>
         </div>
     </aside>
 
     <main class="content">
         <div class="topbar">
-            <h1>Dosen Dashboard</h1>
-            <p class="muted">Fokus mengajar: buat course, bangun quiz, dan monitor progress siswa.</p>
+            <h1>{{ $dosenUi['dashboard'] }}</h1>
+            <p class="muted">{{ $dosenUi['dashboard_intro'] }}</p>
         </div>
 
         @if(session('success'))
@@ -638,41 +697,41 @@
         @endif
 
         <section class="kpi">
-            <article class="box"><strong>{{ $stats['courses'] }}</strong><span class="muted">Courses</span></article>
-            <article class="box"><strong>{{ $stats['questions'] }}</strong><span class="muted">Questions</span></article>
-            <article class="box"><strong>{{ $stats['submissions'] }}</strong><span class="muted">Submissions</span></article>
-            <article class="box"><strong>{{ number_format((float)($avgScore->avg_score ?? 0), 1) }}</strong><span class="muted">Average Score</span></article>
+            <article class="box"><strong>{{ $stats['courses'] }}</strong><span class="muted">{{ $dosenUi['courses'] }}</span></article>
+            <article class="box"><strong>{{ $stats['questions'] }}</strong><span class="muted">{{ $dosenUi['questions'] }}</span></article>
+            <article class="box"><strong>{{ $stats['submissions'] }}</strong><span class="muted">{{ $dosenUi['submissions'] }}</span></article>
+            <article class="box"><strong>{{ number_format((float)($avgScore->avg_score ?? 0), 1) }}</strong><span class="muted">{{ $dosenUi['average_score'] }}</span></article>
         </section>
 
         <section class="panel view active" id="manage-courses">
-            <h2>Kelola Course</h2>
-            <p class="muted">Pilih course dari dropdown untuk lihat/edit setting saat ini, atau tambah course baru.</p>
+            <h2>{{ $dosenUi['manage_courses'] }}</h2>
+            <p class="muted">{{ $dosenUi['manage_courses_text'] }}</p>
             <div style="margin-bottom: 10px;">
-                <button class="btn btn-primary" type="button" id="jumpAddCourseBtn">Add New Course</button>
+                <button class="btn btn-primary" type="button" id="jumpAddCourseBtn">{{ $dosenUi['add_new_course'] }}</button>
             </div>
 
             <div class="cards-2">
                 <article class="card" id="add-course-form">
-                    <h3>Buat Course Baru</h3>
+                    <h3>{{ $dosenUi['create_new_course'] }}</h3>
                     <form class="fields" action="{{ route('dosen.courses.store') }}" method="POST">
                         @csrf
-                        <input type="text" name="title" placeholder="Judul course" required>
-                        <input type="text" name="category" placeholder="Kategori: Web Dev, UI/UX, dll" required>
+                        <input type="text" name="title" placeholder="{{ $dosenUi['course_title_placeholder'] }}" required>
+                        <input type="text" name="category" placeholder="{{ $dosenUi['course_category_placeholder'] }}" required>
                         <select name="difficulty" required>
                             <option value="beginner">Beginner</option>
                             <option value="intermediate">Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
-                        <button class="btn btn-primary" type="submit">Create Course</button>
+                        <button class="btn btn-primary" type="submit">{{ $dosenUi['create_course'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Course Saya - {{ auth()->user()->name }}</h3>
+                    <h3>{{ __('ui.dosen_dashboard.my_courses', ['name' => auth()->user()->name]) }}</h3>
                     <div class="table-wrap">
                         <table style="min-width:100%;">
                             <thead>
-                            <tr><th>Title</th><th>Category</th><th>Difficulty</th><th>Action</th></tr>
+                            <tr><th>{{ $dosenUi['title'] }}</th><th>{{ $dosenUi['category'] }}</th><th>{{ $dosenUi['difficulty'] }}</th><th>{{ $dosenUi['action'] }}</th></tr>
                             </thead>
                             <tbody>
                             @forelse($manageableCourses as $course)
@@ -687,12 +746,12 @@
                                             data-course-key="{{ $course->key }}"
                                             style="padding:6px 10px;font-size:11px;"
                                         >
-                                            Edit Info
+                                            {{ $dosenUi['edit_info'] }}
                                         </button>
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4">Belum ada course.</td></tr>
+                                <tr><td colspan="4">{{ $dosenUi['no_courses'] }}</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -701,12 +760,12 @@
             </div>
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Course Info Editor</h3>
-                <p class="muted">Semua setting Kelola Course ada di sini. Pilih course untuk menampilkan setting saat ini.</p>
+                <h3>{{ $dosenUi['course_info_editor'] }}</h3>
+                <p class="muted">{{ $dosenUi['course_info_text'] }}</p>
                 <form class="fields" id="courseInfoForm" action="{{ route('dosen.courses.info.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <select id="courseInfoSelector" required>
-                        <option value="">Pilih course</option>
+                        <option value="">{{ $dosenUi['choose_course'] }}</option>
                         @foreach($manageableCourses as $courseOption)
                             <option value="{{ $courseOption->key }}">{{ $courseOption->title }}</option>
                         @endforeach
@@ -717,36 +776,36 @@
                         href="{{ route('instructor.courses.roadmap', ['course' => 'frontend-craft']) }}"
                         style="display:none; width: fit-content;"
                     >
-                        Open Chapter Builder
+                        {{ $dosenUi['open_chapter_builder'] }}
                     </a>
                     <input type="hidden" name="quiz_id" id="courseInfoQuizId">
-                    <input type="text" name="hero_title" id="courseInfoHeroTitle" placeholder="Hero title (judul besar)">
-                    <input type="url" name="hero_background_url" id="courseInfoHeroBackgroundUrl" placeholder="Hero background URL (opsional)">
+                    <input type="text" name="hero_title" id="courseInfoHeroTitle" placeholder="{{ $dosenUi['hero_title_placeholder'] }}">
+                    <input type="url" name="hero_background_url" id="courseInfoHeroBackgroundUrl" placeholder="{{ $dosenUi['hero_background_placeholder'] }}">
                     <input type="file" name="hero_background_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    <input type="text" name="tagline" id="courseInfoTagline" placeholder='Tagline, contoh: "Belajar praktis langsung project"'>
-                    <input type="text" name="instructor_name" id="courseInfoInstructorName" placeholder="Instructor name (opsional)">
-                    <input type="url" name="instructor_photo_url" id="courseInfoInstructorPhoto" placeholder="Instructor photo URL (opsional)">
+                    <input type="text" name="tagline" id="courseInfoTagline" placeholder="{{ $dosenUi['tagline_placeholder'] }}">
+                    <input type="text" name="instructor_name" id="courseInfoInstructorName" placeholder="{{ $dosenUi['instructor_name_placeholder'] }}">
+                    <input type="url" name="instructor_photo_url" id="courseInfoInstructorPhoto" placeholder="{{ $dosenUi['instructor_photo_placeholder'] }}">
                     <input type="file" name="instructor_photo_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    <textarea name="about" id="courseInfoAbout" placeholder="About this course"></textarea>
-                    <input type="text" name="target_audience" id="courseInfoTargetAudience" placeholder="Target audience">
-                    <input type="text" name="duration_text" id="courseInfoDurationText" placeholder="Duration text, contoh: Total Durasi: 8 Jam Video">
-                    <textarea name="syllabus_lines" id="courseInfoSyllabusLines" placeholder="Syllabus per baris: Judul Module|Deskripsi module"></textarea>
-                    <textarea name="learning_outcomes" id="courseInfoLearningOutcomes" placeholder="Learning outcomes (satu baris per poin)"></textarea>
-                    <input type="url" name="trailer_url" id="courseInfoTrailerUrl" placeholder="Trailer video URL (opsional)">
+                    <textarea name="about" id="courseInfoAbout" placeholder="{{ $dosenUi['about_placeholder'] }}"></textarea>
+                    <input type="text" name="target_audience" id="courseInfoTargetAudience" placeholder="{{ $dosenUi['target_audience_placeholder'] }}">
+                    <input type="text" name="duration_text" id="courseInfoDurationText" placeholder="{{ $dosenUi['duration_text_placeholder'] }}">
+                    <textarea name="syllabus_lines" id="courseInfoSyllabusLines" placeholder="{{ $dosenUi['syllabus_placeholder'] }}"></textarea>
+                    <textarea name="learning_outcomes" id="courseInfoLearningOutcomes" placeholder="{{ $dosenUi['learning_outcomes_placeholder'] }}"></textarea>
+                    <input type="url" name="trailer_url" id="courseInfoTrailerUrl" placeholder="{{ $dosenUi['trailer_url_placeholder'] }}">
                     <input type="file" name="trailer_file" accept=".mp4,.mov,.m4v,.webm,.avi,video/mp4,video/quicktime,video/webm,video/x-msvideo">
-                    <input type="url" name="trailer_poster_url" id="courseInfoTrailerPosterUrl" placeholder="Trailer poster URL (opsional)">
+                    <input type="url" name="trailer_poster_url" id="courseInfoTrailerPosterUrl" placeholder="{{ $dosenUi['trailer_poster_placeholder'] }}">
                     <input type="file" name="trailer_poster_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    <button class="btn btn-primary" type="submit">Save Course Info</button>
+                    <button class="btn btn-primary" type="submit">{{ $dosenUi['save_course_info'] }}</button>
                 </form>
 
                 <div class="table-wrap">
                     <table style="min-width:100%;">
                         <thead>
                         <tr>
-                            <th>Course</th>
+                            <th>{{ $dosenUi['course'] }}</th>
                             <th>Tagline</th>
-                            <th>Audience</th>
-                            <th>Updated</th>
+                            <th>{{ $dosenUi['audience'] }}</th>
+                            <th>{{ $dosenUi['updated'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -758,7 +817,7 @@
                                 <td>{{ \Illuminate\Support\Carbon::parse($row->updated_at)->format('d M Y H:i') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4">Belum ada course info custom.</td></tr>
+                            <tr><td colspan="4">{{ $dosenUi['no_custom_course_info'] }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -768,30 +827,30 @@
         </section>
 
         <section class="panel view" id="manage-quiz">
-            <h2>Kelola Quiz</h2>
-            <p class="muted">Tambah soal manual atau generate preview soal AI untuk course yang kamu kelola, termasuk pop quiz setelah chapter tertentu.</p>
+            <h2>{{ $dosenUi['manage_quiz'] }}</h2>
+            <p class="muted">{{ $dosenUi['manage_quiz_text'] }}</p>
             @php($dosenAiPreview = session('dosen_ai_question_preview'))
 
             <div class="cards-2">
                 <article class="card">
-                    <h3>AI Quiz Generator</h3>
+                    <h3>{{ $dosenUi['ai_quiz_generator'] }}</h3>
                     <form class="fields" action="{{ route('dosen.questions.ai.preview') }}" method="POST">
                         @csrf
                         <select name="course_key" required>
-                            <option value="">Pilih course target</option>
+                            <option value="">{{ $dosenUi['choose_target_course'] }}</option>
                             @foreach($manageableCourses as $course)
                                 <option value="{{ $course->key }}" @selected(old('course_key', $dosenAiPreview['course_key'] ?? '') == $course->key)>
                                     {{ $course->title }} ({{ ucfirst($course->difficulty) }})
                                 </option>
                             @endforeach
                         </select>
-                        <textarea name="generation_notes" placeholder="Comment / lore untuk AI. Jelaskan materi, konsep, gaya pertanyaan, atau vibe pop quiz yang kamu inginkan." required>{{ old('generation_notes', $dosenAiPreview['generation_notes'] ?? '') }}</textarea>
+                        <textarea name="generation_notes" placeholder="{{ $dosenUi['generation_notes_placeholder'] }}" required>{{ old('generation_notes', $dosenAiPreview['generation_notes'] ?? '') }}</textarea>
                         <select name="difficulty" required>
                             <option value="beginner" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'beginner')>Beginner</option>
                             <option value="intermediate" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'intermediate')>Intermediate</option>
                             <option value="advanced" @selected(old('difficulty', $dosenAiPreview['difficulty'] ?? '') === 'advanced')>Advanced</option>
                         </select>
-                        <input type="number" name="question_count" min="1" max="10" value="{{ old('question_count', $dosenAiPreview['question_count'] ?? 5) }}" placeholder="How many questions?">
+                        <input type="number" name="question_count" min="1" max="10" value="{{ old('question_count', $dosenAiPreview['question_count'] ?? 5) }}" placeholder="{{ $dosenUi['question_count_placeholder'] }}">
                         <select name="question_type_mode" required>
                             <option value="mcq" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mcq')>MCQ Only</option>
                             <option value="essay" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'essay')>Essay Only</option>
@@ -799,23 +858,23 @@
                             <option value="mixed_mcq_essay" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mixed_mcq_essay')>Mixed MCQ + Essay</option>
                             <option value="mixed_all" @selected(old('question_type_mode', $dosenAiPreview['question_type_mode'] ?? '') === 'mixed_all')>Mixed All Types</option>
                         </select>
-                        <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $dosenAiPreview['placement_after_chapter'] ?? '') }}" placeholder="Insert after chapter (optional)">
-                        <p class="muted" style="margin:0;">Jika kamu isi posisi chapter, sistem otomatis menjadikannya pop quiz merah yang wajib diselesaikan sebelum lanjut.</p>
-                        <button class="btn btn-primary" type="submit">Preview Questions</button>
+                        <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $dosenAiPreview['placement_after_chapter'] ?? '') }}" placeholder="{{ $dosenUi['insert_after_chapter_placeholder'] }}">
+                        <p class="muted" style="margin:0;">{{ $dosenUi['auto_pop_quiz_note'] }}</p>
+                        <button class="btn btn-primary" type="submit">{{ $dosenUi['preview_questions'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Tambah Soal Manual</h3>
+                    <h3>{{ $dosenUi['manual_question'] }}</h3>
                     <form class="fields" action="{{ route('dosen.questions.store') }}" method="POST">
                         @csrf
                         <select name="course_key" required>
-                            <option value="">Pilih course/quiz</option>
+                            <option value="">{{ $dosenUi['choose_course_or_quiz'] }}</option>
                             @foreach($manageableCourses as $course)
                                 <option value="{{ $course->key }}">{{ $course->title }} ({{ ucfirst($course->difficulty) }})</option>
                             @endforeach
                         </select>
-                        <textarea name="question_text" placeholder="Tulis soal..." required></textarea>
+                        <textarea name="question_text" placeholder="{{ $dosenUi['question_placeholder'] }}" required></textarea>
                         <select name="question_type" required>
                             <option value="mcq">MCQ</option>
                             <option value="essay">Essay</option>
@@ -826,35 +885,35 @@
                             <option value="intermediate">Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
-                        <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="Insert after chapter (optional)">
-                        <p class="muted" style="margin:0;">Isi posisi chapter jika soal ini harus otomatis muncul sebagai pop quiz merah / wajib perfect score.</p>
-                        <input type="text" name="correct_answer" placeholder="Jawaban benar (opsional)">
-                        <textarea name="options_json" placeholder='Pilihan JSON, ex: ["A","B","C","D"]'></textarea>
-                        <button class="btn btn-primary" type="submit">Simpan Soal</button>
+                        <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="{{ $dosenUi['insert_after_chapter_placeholder'] }}">
+                        <p class="muted" style="margin:0;">{{ $dosenUi['auto_pop_quiz_note'] }}</p>
+                        <input type="text" name="correct_answer" placeholder="{{ $dosenUi['correct_answer_placeholder'] }}">
+                        <textarea name="options_json" placeholder="{{ $dosenUi['options_placeholder'] }}"></textarea>
+                        <button class="btn btn-primary" type="submit">{{ $dosenUi['save_question'] }}</button>
                     </form>
                 </article>
             </div>
 
             @if(is_array($dosenAiPreview) && !empty($dosenAiPreview['questions']))
                 <div class="card" style="margin-top:12px;">
-                    <h3>AI Preview: {{ $dosenAiPreview['course_title'] }}</h3>
-                    <p class="muted">Placement:
+                    <h3>{{ __('ui.dosen_dashboard.ai_preview', ['course' => $dosenAiPreview['course_title']]) }}</h3>
+                    <p class="muted">{{ $dosenUi['placement'] }}:
                         @if(!empty($dosenAiPreview['placement_after_chapter']))
-                            after chapter {{ $dosenAiPreview['placement_after_chapter'] }}
+                            {{ __('ui.dosen_dashboard.after_chapter', ['chapter' => $dosenAiPreview['placement_after_chapter']]) }}
                         @else
-                            no pop quiz placement
+                            {{ $dosenUi['no_pop_quiz_placement'] }}
                         @endif
-                        &bull; Type mode: {{ str_replace('_', ' ', $dosenAiPreview['question_type_mode']) }}
+                        &bull; {{ $dosenUi['type_mode'] }}: {{ str_replace('_', ' ', $dosenAiPreview['question_type_mode']) }}
                     </p>
                     <div class="table-wrap">
                         <table>
                             <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Question</th>
-                                <th>Type</th>
-                                <th>Difficulty</th>
-                                <th>Answer / Options</th>
+                                <th>{{ $dosenUi['question'] }}</th>
+                                <th>{{ $dosenUi['type'] }}</th>
+                                <th>{{ $dosenUi['difficulty'] }}</th>
+                                <th>{{ $dosenUi['answer_options'] }}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -877,30 +936,30 @@
                     </div>
                     <form action="{{ route('dosen.questions.ai.save') }}" method="POST" style="margin-top:10px;">
                         @csrf
-                        <button class="btn btn-primary" type="submit">Save Preview To Question Bank</button>
+                        <button class="btn btn-primary" type="submit">{{ $dosenUi['save_preview_to_bank'] }}</button>
                     </form>
                 </div>
             @endif
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Question Bank Tersimpan</h3>
-                <p class="muted">Semua soal yang kamu buat atau generate dari AI terkumpul di sini, jadi lebih gampang cek mana pop quiz, mana soal reguler, lalu hapus yang sudah tidak dipakai.</p>
+                <h3>{{ $dosenUi['stored_question_bank'] }}</h3>
+                <p class="muted">{{ $dosenUi['stored_question_bank_text'] }}</p>
                 <div class="question-bank-summary">
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['total'] ?? 0 }}</strong>
-                        <span class="muted">Total stored questions</span>
+                        <span class="muted">{{ $dosenUi['stored_total'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['pop_quiz'] ?? 0 }}</strong>
-                        <span class="muted">Pop quiz questions</span>
+                        <span class="muted">{{ $dosenUi['stored_pop_quiz'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['ai'] ?? 0 }}</strong>
-                        <span class="muted">AI-generated</span>
+                        <span class="muted">{{ $dosenUi['stored_ai'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['manual'] ?? 0 }}</strong>
-                        <span class="muted">Manual entries</span>
+                        <span class="muted">{{ $dosenUi['stored_manual'] }}</span>
                     </article>
                 </div>
                 <div class="question-bank-list">
@@ -963,27 +1022,27 @@
                             @endforeach
                         </section>
                     @empty
-                        <div class="question-bank-empty">Question bank masih kosong. Tambah soal manual atau generate dari AI dulu, nanti semuanya akan terkumpul rapi di sini.</div>
+                        <div class="question-bank-empty">{{ $dosenUi['empty_question_bank'] }}</div>
                     @endforelse
                 </div>
             </div>
         </section>
 
         <section class="panel view" id="scores">
-            <h2>Lihat Nilai</h2>
-            <p class="muted">Pantau performa siswa untuk semua course yang kamu ajar.</p>
-            <a class="btn btn-ghost" href="{{ route('dosen.scores.export') }}">Export Scores (CSV)</a>
+            <h2>{{ $dosenUi['scores'] }}</h2>
+            <p class="muted">{{ $dosenUi['view_scores_text'] }}</p>
+            <a class="btn btn-ghost" href="{{ route('dosen.scores.export') }}">{{ $dosenUi['export_scores'] }}</a>
 
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
-                        <th>Student</th>
-                        <th>Course</th>
-                        <th>Auto Score</th>
-                        <th>Manual Score</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
+                        <th>{{ $dosenUi['student'] }}</th>
+                        <th>{{ $dosenUi['course'] }}</th>
+                        <th>{{ $dosenUi['auto_score'] }}</th>
+                        <th>{{ $dosenUi['manual_score'] }}</th>
+                        <th>{{ $dosenUi['status'] }}</th>
+                        <th>{{ $dosenUi['submitted'] }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -997,34 +1056,34 @@
                             <td>{{ $submission->submitted_at ? \Illuminate\Support\Carbon::parse($submission->submitted_at)->format('d M Y H:i') : '-' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6">Belum ada data nilai.</td></tr>
+                        <tr><td colspan="6">{{ $dosenUi['no_scores'] }}</td></tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Attendance Course</h3>
+                <h3>{{ $dosenUi['attendance_course'] }}</h3>
                 <div class="cards-2">
                     <article class="card">
                         <strong style="display:block;font-size:22px;">{{ $attendanceStats['total_sessions'] ?? 0 }}</strong>
-                        <span class="muted">Total attendance sessions</span>
+                        <span class="muted">{{ $dosenUi['total_attendance_sessions'] }}</span>
                     </article>
                     <article class="card">
                         <strong style="display:block;font-size:22px;">{{ $attendanceStats['attended_sessions'] ?? 0 }}</strong>
-                        <span class="muted">Attendance counted</span>
+                        <span class="muted">{{ $dosenUi['attendance_counted'] }}</span>
                     </article>
                 </div>
-                <p class="muted" style="margin-top:10px;">Students tracked in consistent mode: {{ $attendanceStats['students_in_mode'] ?? 0 }}</p>
+                <p class="muted" style="margin-top:10px;">{{ __('ui.dosen_dashboard.students_in_mode', ['count' => $attendanceStats['students_in_mode'] ?? 0]) }}</p>
                 <div class="table-wrap" style="margin-top:10px;">
                     <table>
                         <thead>
                         <tr>
-                            <th>Student</th>
-                            <th>Course</th>
-                            <th>Date</th>
-                            <th>Progress</th>
-                            <th>Status</th>
+                            <th>{{ $dosenUi['student'] }}</th>
+                            <th>{{ $dosenUi['course'] }}</th>
+                            <th>{{ $dosenUi['date'] }}</th>
+                            <th>{{ $dosenUi['progress'] }}</th>
+                            <th>{{ $dosenUi['status'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1034,10 +1093,10 @@
                                 <td>{{ $attendanceItem->course_title }}</td>
                                 <td>{{ \Illuminate\Support\Carbon::parse($attendanceItem->attendance_date)->format('d M Y') }}</td>
                                 <td>{{ $attendanceItem->chapters_completed }}/{{ $attendanceItem->target_chapters }} chapters</td>
-                                <td>{{ $attendanceItem->is_attended ? 'Counted' : 'In Progress' }}</td>
+                                <td>{{ $attendanceItem->is_attended ? $dosenUi['counted'] : $dosenUi['in_progress'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5">Belum ada data attendance untuk course kamu.</td></tr>
+                            <tr><td colspan="5">{{ $dosenUi['no_attendance'] }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -1046,18 +1105,18 @@
         </section>
 
         <section class="panel view" id="qa-inbox">
-            <h2>Q&A Siswa</h2>
-            <p class="muted">Pertanyaan dari siswa masuk ke sini, lengkap dengan asal course dan chapter.</p>
+            <h2>{{ $dosenUi['qa_inbox'] }}</h2>
+            <p class="muted">{{ $dosenUi['qa_inbox_text'] }}</p>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
-                        <th>Student</th>
-                        <th>Course</th>
-                        <th>Chapter</th>
-                        <th>Pertanyaan</th>
-                        <th>Jawaban Dosen</th>
-                        <th>Waktu</th>
+                        <th>{{ $dosenUi['student'] }}</th>
+                        <th>{{ $dosenUi['course'] }}</th>
+                        <th>{{ $dosenUi['chapter'] }}</th>
+                        <th>{{ $dosenUi['student_question'] }}</th>
+                        <th>{{ $dosenUi['lecturer_answer'] }}</th>
+                        <th>{{ $dosenUi['time'] }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -1065,20 +1124,20 @@
                         <tr>
                             <td>{{ $qa->student_name ?? 'Student' }}</td>
                             <td>{{ $qa->course_title }}</td>
-                            <td>{{ $qa->chapter_number ? 'Chapter '.$qa->chapter_number : 'General' }}</td>
+                                <td>{{ $qa->chapter_number ? 'Chapter '.$qa->chapter_number : $dosenUi['general'] }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($qa->question_text, 140) }}</td>
                             <td>
                                 <form action="{{ route('dosen.questions.answer', ['question' => $qa->id]) }}" method="POST" class="fields" style="gap:6px;">
                                     @csrf
                                     @method('PATCH')
-                                    <textarea name="answer_text" style="min-height:64px;" placeholder="Tulis jawaban untuk siswa..." required>{{ $qa->answer_text }}</textarea>
-                                    <button class="btn btn-ghost" type="submit" style="width:fit-content;">Save Answer</button>
+                                    <textarea name="answer_text" style="min-height:64px;" placeholder="{{ $dosenUi['answer_placeholder'] }}" required>{{ $qa->answer_text }}</textarea>
+                                    <button class="btn btn-ghost" type="submit" style="width:fit-content;">{{ $dosenUi['save_answer'] }}</button>
                                 </form>
                             </td>
                             <td>{{ \Illuminate\Support\Carbon::parse($qa->created_at)->format('d M Y H:i') }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="6">Belum ada pertanyaan dari siswa.</td></tr>
+                        <tr><td colspan="6">{{ $dosenUi['no_questions'] }}</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -1086,40 +1145,40 @@
         </section>
 
         <section class="panel view" id="analytics">
-            <h2>Analytics</h2>
-            <p class="muted">Pantau konsistensi belajar siswa, kekuatan tiap course, dan siapa yang perlu kamu bantu lebih cepat.</p>
+            <h2>{{ $dosenUi['analytics'] }}</h2>
+            <p class="muted">{{ $dosenUi['analytics_text'] }}</p>
 
             <div class="cards-3">
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['active_learners'] ?? 0 }}</strong>
-                    <span class="muted">Active learners</span>
+                    <span class="muted">{{ $dosenUi['active_learners'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['consistent_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Consistent mode adoption</span>
+                    <span class="muted">{{ $dosenUi['consistent_adoption'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['avg_progress'] ?? 0 }}%</strong>
-                    <span class="muted">Average chapter progress</span>
+                    <span class="muted">{{ $dosenUi['avg_progress'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['attendance_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Attendance success rate</span>
+                    <span class="muted">{{ $dosenUi['attendance_rate'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['pop_quiz_mastery'] ?? 0 }}%</strong>
-                    <span class="muted">Pop quiz mastery</span>
+                    <span class="muted">{{ $dosenUi['pop_quiz_mastery'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $progressOverview['qa_answer_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Q&amp;A response coverage</span>
+                    <span class="muted">{{ $dosenUi['qa_coverage'] }}</span>
                 </article>
             </div>
 
             <div class="cards-2" style="margin-top:12px;">
                 <article class="card">
-                    <h3>7-Day Learning Momentum</h3>
-                    <p class="muted">Kombinasi penyelesaian chapter dan attendance counted dalam 7 hari terakhir.</p>
+                    <h3>{{ $dosenUi['seven_day_momentum'] }}</h3>
+                    <p class="muted">{{ $dosenUi['seven_day_momentum_text'] }}</p>
                     <div class="analytics-bars">
                         @if(!empty($progressWeeklyRows))
                             @foreach($progressWeeklyRows as $row)
@@ -1130,40 +1189,40 @@
                                 </div>
                             @endforeach
                         @else
-                            <p class="muted">Belum ada momentum belajar yang bisa dianalisis.</p>
+                            <p class="muted">{{ $dosenUi['no_momentum'] }}</p>
                         @endif
                     </div>
                 </article>
 
                 <article class="card">
-                    <h3>Category Activity Snapshot</h3>
-                    <p class="muted">Kategori course dengan aktivitas submission tertinggi dari siswa kamu.</p>
+                    <h3>{{ $dosenUi['category_snapshot'] }}</h3>
+                    <p class="muted">{{ $dosenUi['category_snapshot_text'] }}</p>
                     <div class="analytics-bars">
                         @forelse($analytics as $item)
                             <div class="bar">
-                                <div style="width: {{ min(100, $item->total * 12) }}%;">{{ $item->category }} - {{ $item->total }} submissions</div>
+                                <div style="width: {{ min(100, $item->total * 12) }}%;">{{ $item->category }} - {{ $item->total }} {{ $dosenUi['submissions_label'] }}</div>
                             </div>
                         @empty
-                            <p class="muted">Belum ada activity snapshot.</p>
+                            <p class="muted">{{ $dosenUi['no_activity_snapshot'] }}</p>
                         @endforelse
                     </div>
                 </article>
             </div>
 
             <div class="card" style="margin-top:12px;">
-                <h3>Course Health Radar</h3>
-                <p class="muted">Ringkasan health tiap course yang kamu pegang, mulai dari progress sampai Q&amp;A yang masih terbuka.</p>
+                <h3>{{ $dosenUi['course_health'] }}</h3>
+                <p class="muted">{{ $dosenUi['course_health_text'] }}</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
                         <tr>
-                            <th>Course</th>
-                            <th>Students</th>
-                            <th>Consistent Mode</th>
-                            <th>Avg Progress</th>
-                            <th>Attendance</th>
-                            <th>Pop Quiz Mastery</th>
-                            <th>Open Q&amp;A</th>
+                            <th>{{ $dosenUi['course'] }}</th>
+                            <th>{{ $dosenUi['students'] }}</th>
+                            <th>{{ $dosenUi['consistent_mode'] }}</th>
+                            <th>{{ $dosenUi['avg_progress'] }}</th>
+                            <th>{{ $dosenUi['attendance_rate'] }}</th>
+                            <th>{{ $dosenUi['pop_quiz_mastery'] }}</th>
+                            <th>{{ $dosenUi['open_qa'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1180,7 +1239,7 @@
                                 </tr>
                             @endforeach
                         @else
-                            <tr><td colspan="7">Belum ada data health course.</td></tr>
+                            <tr><td colspan="7">{{ $dosenUi['no_course_health'] }}</td></tr>
                         @endif
                         </tbody>
                     </table>
@@ -1188,18 +1247,18 @@
             </div>
 
             <div class="card" style="margin-top:12px;">
-                <h3>Students To Watch</h3>
-                <p class="muted">Daftar siswa yang paling butuh intervensi cepat, plus siapa yang sudah berjalan kuat.</p>
+                <h3>{{ $dosenUi['students_to_watch'] }}</h3>
+                <p class="muted">{{ $dosenUi['students_to_watch_text'] }}</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
                         <tr>
-                            <th>Student</th>
-                            <th>Course</th>
-                            <th>Progress</th>
-                            <th>Attendance</th>
-                            <th>Last Activity</th>
-                            <th>Status</th>
+                            <th>{{ $dosenUi['student'] }}</th>
+                            <th>{{ $dosenUi['course'] }}</th>
+                            <th>{{ $dosenUi['progress'] }}</th>
+                            <th>{{ $dosenUi['attendance_rate'] }}</th>
+                            <th>{{ $dosenUi['last_activity'] }}</th>
+                            <th>{{ $dosenUi['status'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1210,7 +1269,7 @@
                                     <td>{{ $row['course_title'] }}</td>
                                     <td>{{ $row['progress_percent'] }}%</td>
                                     <td>{{ $row['attendance_rate'] }}%</td>
-                                    <td>{{ $row['last_activity'] ? \Illuminate\Support\Carbon::parse($row['last_activity'])->format('d M Y H:i') : 'Belum ada aktivitas' }}</td>
+                                    <td>{{ $row['last_activity'] ? \Illuminate\Support\Carbon::parse($row['last_activity'])->format('d M Y H:i') : $dosenUi['no_activity'] }}</td>
                                     <td>
                                         <span class="status {{ $row['status'] === 'Strong' ? 'active' : ($row['status'] === 'Needs Attention' ? 'suspended' : 'info') }}">
                                             {{ $row['status'] }}
@@ -1219,7 +1278,7 @@
                                 </tr>
                             @endforeach
                         @else
-                            <tr><td colspan="6">Belum ada data siswa yang bisa dipantau.</td></tr>
+                            <tr><td colspan="6">{{ $dosenUi['no_students_to_watch'] }}</td></tr>
                         @endif
                         </tbody>
                     </table>
@@ -1228,7 +1287,7 @@
         </section>
 
         <footer class="site-footer">
-            <p>&copy; {{ date('Y') }} Skillify - Dosen Dashboard</p>
+            <p>&copy; {{ date('Y') }} {{ $dosenUi['footer'] }}</p>
         </footer>
     </main>
 </div>
@@ -1346,4 +1405,3 @@
 </script>
 </body>
 </html>
-

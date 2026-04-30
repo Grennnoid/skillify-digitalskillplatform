@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up | Skillify</title>
+    <title>{{ __('ui.auth.register_title') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -29,10 +29,57 @@
                 radial-gradient(900px 460px at 82% -18%, rgba(124, 246, 214, 0.18), transparent 58%),
                 linear-gradient(180deg, #050911 0%, #060a12 100%);
             padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .auth-shell {
+            width: min(500px, 100%);
+        }
+
+        .auth-topbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(17, 27, 48, 0.6);
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding-left: 6px;
+            white-space: nowrap;
+        }
+
+        .locale-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            color: #d9e8ff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .locale-pill.active {
+            color: #041220;
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
         }
 
         .card {
-            width: min(500px, 100%);
+            width: 100%;
             border: 1px solid var(--line);
             background: var(--panel);
             backdrop-filter: blur(10px);
@@ -135,8 +182,12 @@
 
         @media (max-width: 560px) {
             body {
-                place-items: start;
+                place-items: start center;
                 padding: 16px;
+            }
+
+            .auth-shell {
+                width: min(100%, calc(100vw - 32px));
             }
 
             .card {
@@ -156,10 +207,17 @@
     </style>
 </head>
 <body>
-    <div>
+    <div class="auth-shell">
+    <div class="auth-topbar">
+        <div class="locale-switcher" aria-label="{{ __('ui.locale.switch') }}">
+            <span>{{ __('ui.locale.switch') }}</span>
+            <a class="locale-pill {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ route('locale.switch', 'en') }}">EN</a>
+            <a class="locale-pill {{ app()->getLocale() === 'id' ? 'active' : '' }}" href="{{ route('locale.switch', 'id') }}">ID</a>
+        </div>
+    </div>
     <main class="card">
-        <h1>Create Account</h1>
-        <p>Start your journey with a clean and future-ready learning platform.</p>
+        <h1>{{ __('ui.auth.register_heading') }}</h1>
+        <p>{{ __('ui.auth.register_subtitle') }}</p>
 
         @if($errors->any())
             <div class="error">{{ $errors->first() }}</div>
@@ -169,42 +227,32 @@
             @csrf
 
             <div class="field">
-                <label for="name">Full Name</label>
+                <label for="name">{{ __('ui.auth.full_name') }}</label>
                 <input type="text" id="name" name="name" value="{{ old('name') }}" required>
             </div>
 
             <div class="field">
-                <label for="email">Email</label>
+                <label for="email">{{ __('ui.auth.email') }}</label>
                 <input type="email" id="email" name="email" value="{{ old('email') }}" required>
             </div>
 
             <div class="field">
-                <label for="role">Register As</label>
-                <select id="role" name="role" required>
-                    <option value="student" @selected(old('role', $preferredRole ?? 'student') === 'student')>Student</option>
-                    <option value="dosen" @selected(old('role', $preferredRole ?? 'student') === 'dosen')>Dosen / Mentor (Need Admin Approval)</option>
-                </select>
-            </div>
-
-    
-
-            <div class="field">
-                <label for="password">Password</label>
+                <label for="password">{{ __('ui.auth.password') }}</label>
                 <input type="password" id="password" name="password" required>
             </div>
 
             <div class="field">
-                <label for="password_confirmation">Confirm Password</label>
+                <label for="password_confirmation">{{ __('ui.auth.confirm_password') }}</label>
                 <input type="password" id="password_confirmation" name="password_confirmation" required>
             </div>
 
-            <button type="submit" class="btn">Sign Up</button>
+            <button type="submit" class="btn">{{ __('ui.auth.sign_up') }}</button>
         </form>
 
         <div class="foot">
-            Already have an account? <a href="{{ route('login') }}">Login</a>
+            {{ __('ui.auth.already_have_account') }} <a href="{{ route('login') }}">{{ __('ui.auth.login') }}</a>
             <br>
-            <a href="{{ route('landing') }}">Back to landing page</a>
+            <a href="{{ route('landing') }}">{{ __('ui.auth.back_landing') }}</a>
         </div>
     </main>
     <footer class="site-footer">

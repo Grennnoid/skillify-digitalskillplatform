@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Control Center | Skillify</title>
+    <title>{{ __('ui.admin.title_page') }}</title>
     <style>
         :root {
             --bg: #070b14;
@@ -29,12 +29,14 @@
                 radial-gradient(1200px 620px at 15% -18%, rgba(69, 208, 255, 0.2), transparent 60%),
                 radial-gradient(900px 480px at 85% -20%, rgba(124, 246, 214, 0.18), transparent 56%),
                 linear-gradient(180deg, #050911 0%, #060a12 100%);
+            overflow-x: hidden;
         }
 
         .layout {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 280px minmax(0, 1fr);
+            width: 100%;
         }
 
         .sidebar {
@@ -45,6 +47,8 @@
             top: 0;
             height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
+            min-width: 0;
         }
 
         .brand {
@@ -108,8 +112,43 @@
             gap: 8px;
         }
 
+        .locale-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px;
+            background: rgba(14, 23, 42, 0.72);
+            margin-bottom: 14px;
+        }
+
+        .locale-switcher span {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 0 8px;
+        }
+
+        .locale-switcher a {
+            min-width: 36px;
+            text-align: center;
+            text-decoration: none;
+            color: #d8e7ff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 10px;
+            border-radius: 999px;
+        }
+
+        .locale-switcher a.active {
+            color: #07121f;
+            background: linear-gradient(120deg, var(--primary), var(--secondary));
+        }
+
         .content {
             padding: 22px;
+            min-width: 0;
+            overflow-x: hidden;
         }
 
         .topbar {
@@ -565,9 +604,16 @@
                 height: auto;
                 border-right: 0;
                 border-bottom: 1px solid var(--line);
+                padding: 14px;
             }
             .nav {
                 grid-template-columns: 1fr 1fr;
+            }
+            .content {
+                padding: 16px;
+            }
+            .side-actions {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -576,6 +622,24 @@
             .kpi { grid-template-columns: 1fr; }
             .inline-form { flex-direction: column; align-items: stretch; }
             .question-bank-summary { grid-template-columns: 1fr; }
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .sidebar {
+                padding: 12px;
+            }
+            .content {
+                padding: 12px 10px 16px;
+            }
+            .nav-btn,
+            .btn {
+                width: 100%;
+            }
+            .table-wrap {
+                margin-left: -2px;
+                margin-right: -2px;
+            }
         }
 
         .site-footer {
@@ -589,32 +653,39 @@
     </style>
 </head>
 <body>
+@php($adminUi = __('ui.admin'))
 <div class="layout">
     <aside class="sidebar">
         <div class="brand">
             <span class="dot"></span>
-            <span>Admin Control Center</span>
+            <span>{{ $adminUi['control_center'] }}</span>
+        </div>
+
+        <div class="locale-switcher">
+            <span>{{ __('ui.locale.switch') }}</span>
+            <a href="{{ route('locale.switch', ['locale' => 'en']) }}" class="{{ app()->getLocale() === 'en' ? 'active' : '' }}">{{ __('ui.locale.en') }}</a>
+            <a href="{{ route('locale.switch', ['locale' => 'id']) }}" class="{{ app()->getLocale() === 'id' ? 'active' : '' }}">{{ __('ui.locale.id') }}</a>
         </div>
 
         <div class="side-meta">
-            Login as <strong>{{ auth()->user()->name }}</strong><br>
-            Role: <strong>{{ strtoupper(auth()->user()->role) }}</strong>
+            {{ $adminUi['login_as'] }} <strong>{{ auth()->user()->name }}</strong><br>
+            {{ $adminUi['role'] }}: <strong>{{ strtoupper(auth()->user()->role) }}</strong>
         </div>
 
         <nav class="nav" id="sideNav">
-            <button class="nav-btn active" data-target="user-management">Manajemen Pengguna</button>
-            <button class="nav-btn" data-target="manage-courses">Kelola Course</button>
-            <button class="nav-btn" data-target="manage-quiz">Kelola Quiz</button>
-            <button class="nav-btn" data-target="gradebook">Monitoring Hasil & Nilai</button>
-            <button class="nav-btn" data-target="ai-analytics">AI Dashboard & Analytics</button>
-            <button class="nav-btn" data-target="system-settings">Pengaturan Global</button>
+            <button class="nav-btn active" data-target="user-management">{{ $adminUi['user_management'] }}</button>
+            <button class="nav-btn" data-target="manage-courses">{{ $adminUi['manage_courses'] }}</button>
+            <button class="nav-btn" data-target="manage-quiz">{{ $adminUi['manage_quiz'] }}</button>
+            <button class="nav-btn" data-target="gradebook">{{ $adminUi['gradebook'] }}</button>
+            <button class="nav-btn" data-target="ai-analytics">{{ $adminUi['ai_analytics'] }}</button>
+            <button class="nav-btn" data-target="system-settings">{{ $adminUi['system_settings'] }}</button>
         </nav>
 
         <div class="side-actions">
-            <a class="btn btn-ghost" href="{{ route('landing') }}">Back To Landing</a>
+            <a class="btn btn-ghost" href="{{ route('landing') }}">{{ $adminUi['back_to_landing'] }}</a>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button class="btn btn-danger" type="submit" style="width: 100%;">Logout</button>
+                <button class="btn btn-danger" type="submit" style="width: 100%;">{{ $adminUi['logout'] }}</button>
             </form>
         </div>
     </aside>
@@ -622,8 +693,8 @@
     <main class="content">
         <div class="topbar">
             <div>
-                <h1>Dashboard Admin</h1>
-                <p class="muted">One module at a time for focused workflow.</p>
+                <h1>{{ $adminUi['dashboard'] }}</h1>
+                <p class="muted">{{ $adminUi['dashboard_intro'] }}</p>
             </div>
         </div>
 
@@ -635,26 +706,26 @@
         @endif
 
         <section class="kpi">
-            <article class="box"><strong>{{ $stats['total_users'] }}</strong><span class="muted">Total Users</span></article>
-            <article class="box"><strong>{{ $stats['active_accounts'] }}</strong><span class="muted">Active Accounts</span></article>
-            <article class="box"><strong>{{ $stats['total_quizzes'] }}</strong><span class="muted">Total Quizzes</span></article>
-            <article class="box"><strong>{{ $stats['submissions'] }}</strong><span class="muted">Submissions</span></article>
+            <article class="box"><strong>{{ $stats['total_users'] }}</strong><span class="muted">{{ $adminUi['total_users'] }}</span></article>
+            <article class="box"><strong>{{ $stats['active_accounts'] }}</strong><span class="muted">{{ $adminUi['active_accounts'] }}</span></article>
+            <article class="box"><strong>{{ $stats['total_quizzes'] }}</strong><span class="muted">{{ $adminUi['total_quizzes'] }}</span></article>
+            <article class="box"><strong>{{ $stats['submissions'] }}</strong><span class="muted">{{ $adminUi['submissions'] }}</span></article>
         </section>
 
         <section class="panel view active" id="user-management">
-            <h2>Manajemen Pengguna</h2>
-            <p class="muted">Master user table, role switcher, suspend/active account.</p>
+            <h2>{{ $adminUi['user_management'] }}</h2>
+            <p class="muted">{{ $adminUi['user_management_text'] }}</p>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Role Switcher</th>
-                        <th>Account Status</th>
-                        <th>Delete Account</th>
+                        <th>{{ $adminUi['name'] }}</th>
+                        <th>{{ $adminUi['email'] }}</th>
+                        <th>{{ $adminUi['role'] }}</th>
+                        <th>{{ $adminUi['status'] }}</th>
+                        <th>{{ $adminUi['role'] }} Switcher</th>
+                        <th>Account {{ $adminUi['status'] }}</th>
+                        <th>{{ $adminUi['delete'] }} Account</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -673,7 +744,7 @@
                                         <option value="dosen" @selected($user->role === 'dosen')>Dosen</option>
                                         <option value="student" @selected($user->role === 'student')>Student</option>
                                     </select>
-                                    <button class="btn btn-primary" type="submit">Save</button>
+                                    <button class="btn btn-primary" type="submit">{{ $adminUi['save'] }}</button>
                                 </form>
                             </td>
                             <td>
@@ -684,35 +755,35 @@
                                         <option value="active" @selected($user->account_status === 'active')>Active</option>
                                         <option value="suspended" @selected($user->account_status === 'suspended')>Suspended</option>
                                     </select>
-                                    <button class="btn btn-ghost" type="submit">Update</button>
+                                    <button class="btn btn-ghost" type="submit">{{ $adminUi['update'] }}</button>
                                 </form>
                             </td>
                             <td>
                                 <form action="{{ route('admin.users.delete', $user->id) }}" method="POST" onsubmit="return confirm('Delete account for {{ $user->name }}? This action cannot be undone.');">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-danger" type="submit">Delete</button>
+                                    <button class="btn btn-danger" type="submit">{{ $adminUi['delete'] }}</button>
                                 </form>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">Belum ada data user.</td></tr>
+                        <tr><td colspan="7">{{ $adminUi['no_users'] }}</td></tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
 
             <div class="card" style="margin-top:12px;">
-                <h3>Pengajuan Dosen (Need Approval)</h3>
+                <h3>{{ $adminUi['lecturer_requests'] }}</h3>
                 <div class="table-wrap">
                     <table>
                         <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Requested Role</th>
-                            <th>Requested At</th>
-                            <th>Action</th>
+                            <th>{{ $adminUi['name'] }}</th>
+                            <th>{{ $adminUi['email'] }}</th>
+                            <th>{{ $adminUi['requested_role'] }}</th>
+                            <th>{{ $adminUi['requested_at'] }}</th>
+                            <th>{{ $adminUi['action'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -727,18 +798,18 @@
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="action" value="approve">
-                                        <button class="btn btn-primary" type="submit">Approve</button>
+                                        <button class="btn btn-primary" type="submit">{{ $adminUi['approve'] }}</button>
                                     </form>
                                     <form class="inline-form" action="{{ route('admin.users.dosen-request', $requestUser->id) }}" method="POST" style="margin-top:6px;">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="action" value="reject">
-                                        <button class="btn btn-danger" type="submit">Reject</button>
+                                        <button class="btn btn-danger" type="submit">{{ $adminUi['reject'] }}</button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5">Belum ada pengajuan dosen.</td></tr>
+                            <tr><td colspan="5">{{ $adminUi['no_lecturer_requests'] }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -747,34 +818,34 @@
         </section>
 
         <section class="panel view" id="manage-courses">
-            <h2>Kelola Course</h2>
-            <p class="muted">Pilih course dari dropdown untuk lihat/edit setting saat ini, atau tambah course baru.</p>
+            <h2>{{ $adminUi['manage_courses'] }}</h2>
+            <p class="muted">{{ $adminUi['manage_courses_text'] }}</p>
             <div style="margin-bottom: 10px;">
-                <button class="btn btn-primary" type="button" id="jumpAddCourseBtnAdmin">Add New Course</button>
+                <button class="btn btn-primary" type="button" id="jumpAddCourseBtnAdmin">{{ $adminUi['add_new_course'] }}</button>
             </div>
 
             <div class="cards-2">
                 <article class="card" id="add-course-form-admin">
-                    <h3>Buat Course Baru</h3>
+                    <h3>{{ $adminUi['create_new_course'] }}</h3>
                     <form class="fields" action="{{ route('admin.courses.store') }}" method="POST">
                         @csrf
-                        <input type="text" name="title" placeholder="Judul course" required>
-                        <input type="text" name="category" placeholder="Kategori: Web Dev, UI/UX, dll" required>
+                        <input type="text" name="title" placeholder="{{ $adminUi['course_title_placeholder'] }}" required>
+                        <input type="text" name="category" placeholder="{{ $adminUi['course_category_placeholder'] }}" required>
                         <select name="difficulty" required>
                             <option value="beginner">Beginner</option>
                             <option value="intermediate">Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
-                        <button class="btn btn-primary" type="submit">Create Course</button>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['create_course'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Semua Course</h3>
+                    <h3>{{ $adminUi['all_courses'] }}</h3>
                     <div class="table-wrap">
                         <table style="min-width:100%;">
                             <thead>
-                            <tr><th>Title</th><th>Category</th><th>Difficulty</th><th>Owner</th><th>Action</th></tr>
+                            <tr><th>{{ $adminUi['title'] }}</th><th>{{ $adminUi['category'] }}</th><th>{{ $adminUi['difficulty'] }}</th><th>{{ $adminUi['owner'] }}</th><th>{{ $adminUi['action'] }}</th></tr>
                             </thead>
                             <tbody>
                             @forelse($manageableCourses as $course)
@@ -790,12 +861,12 @@
                                             data-course-key="{{ $course->key }}"
                                             style="padding:6px 10px;font-size:11px;"
                                         >
-                                            Edit Info
+                                            {{ $adminUi['edit_info'] }}
                                         </button>
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5">Belum ada course.</td></tr>
+                                <tr><td colspan="5">{{ $adminUi['no_courses'] }}</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -804,12 +875,12 @@
             </div>
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Course Info Editor</h3>
-                <p class="muted">Semua setting Kelola Course ada di sini. Pilih course untuk menampilkan setting saat ini.</p>
+                <h3>{{ $adminUi['course_info_editor'] }}</h3>
+                <p class="muted">{{ $adminUi['course_info_text'] }}</p>
                 <form class="fields" id="courseInfoFormAdmin" action="{{ route('admin.courses.info.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <select id="courseInfoSelectorAdmin" required>
-                        <option value="">Pilih course</option>
+                        <option value="">{{ $adminUi['choose_course'] }}</option>
                         @foreach($manageableCourses as $courseOption)
                             <option value="{{ $courseOption->key }}">{{ $courseOption->title }}</option>
                         @endforeach
@@ -820,34 +891,34 @@
                         href="{{ route('instructor.courses.roadmap', ['course' => 'frontend-craft']) }}"
                         style="display:none; width: fit-content;"
                     >
-                        Open Chapter Builder
+                        {{ $adminUi['open_chapter_builder'] }}
                     </a>
                     <input type="hidden" name="quiz_id" id="courseInfoQuizIdAdmin">
-                    <input type="text" name="hero_title" id="courseInfoHeroTitleAdmin" placeholder="Hero title (judul besar)">
-                    <input type="url" name="hero_background_url" id="courseInfoHeroBackgroundUrlAdmin" placeholder="Carousel/Hero background URL (opsional)">
+                    <input type="text" name="hero_title" id="courseInfoHeroTitleAdmin" placeholder="{{ $adminUi['hero_title_placeholder'] }}">
+                    <input type="url" name="hero_background_url" id="courseInfoHeroBackgroundUrlAdmin" placeholder="{{ $adminUi['hero_background_placeholder'] }}">
                     <input type="file" name="hero_background_file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
-                    <p class="muted" style="margin:0;">Background image ini juga dipakai di card carousel student dashboard. Ukuran card tetap fixed.</p>
-                    <input type="text" name="tagline" id="courseInfoTaglineAdmin" placeholder='Tagline, contoh: "Belajar praktis langsung project"'>
-                    <input type="text" name="instructor_name" id="courseInfoInstructorNameAdmin" placeholder="Instructor name (opsional)">
-                    <input type="url" name="instructor_photo_url" id="courseInfoInstructorPhotoAdmin" placeholder="Instructor photo URL (opsional)">
-                    <textarea name="about" id="courseInfoAboutAdmin" placeholder="About this course"></textarea>
-                    <input type="text" name="target_audience" id="courseInfoTargetAudienceAdmin" placeholder="Target audience">
-                    <input type="text" name="duration_text" id="courseInfoDurationTextAdmin" placeholder="Duration text, contoh: Total Durasi: 8 Jam Video">
-                    <textarea name="syllabus_lines" id="courseInfoSyllabusLinesAdmin" placeholder="Syllabus per baris: Judul Module|Deskripsi module"></textarea>
-                    <textarea name="learning_outcomes" id="courseInfoLearningOutcomesAdmin" placeholder="Learning outcomes (satu baris per poin)"></textarea>
-                    <input type="url" name="trailer_url" id="courseInfoTrailerUrlAdmin" placeholder="Trailer video URL (opsional)">
-                    <input type="url" name="trailer_poster_url" id="courseInfoTrailerPosterUrlAdmin" placeholder="Trailer poster URL (opsional)">
-                    <button class="btn btn-primary" type="submit">Save Course Info</button>
+                    <p class="muted" style="margin:0;">{{ $adminUi['hero_background_note'] }}</p>
+                    <input type="text" name="tagline" id="courseInfoTaglineAdmin" placeholder="{{ $adminUi['tagline_placeholder'] }}">
+                    <input type="text" name="instructor_name" id="courseInfoInstructorNameAdmin" placeholder="{{ $adminUi['instructor_name_placeholder'] }}">
+                    <input type="url" name="instructor_photo_url" id="courseInfoInstructorPhotoAdmin" placeholder="{{ $adminUi['instructor_photo_placeholder'] }}">
+                    <textarea name="about" id="courseInfoAboutAdmin" placeholder="{{ $adminUi['about_placeholder'] }}"></textarea>
+                    <input type="text" name="target_audience" id="courseInfoTargetAudienceAdmin" placeholder="{{ $adminUi['target_audience_placeholder'] }}">
+                    <input type="text" name="duration_text" id="courseInfoDurationTextAdmin" placeholder="{{ $adminUi['duration_text_placeholder'] }}">
+                    <textarea name="syllabus_lines" id="courseInfoSyllabusLinesAdmin" placeholder="{{ $adminUi['syllabus_placeholder'] }}"></textarea>
+                    <textarea name="learning_outcomes" id="courseInfoLearningOutcomesAdmin" placeholder="{{ $adminUi['learning_outcomes_placeholder'] }}"></textarea>
+                    <input type="url" name="trailer_url" id="courseInfoTrailerUrlAdmin" placeholder="{{ $adminUi['trailer_url_placeholder'] }}">
+                    <input type="url" name="trailer_poster_url" id="courseInfoTrailerPosterUrlAdmin" placeholder="{{ $adminUi['trailer_poster_placeholder'] }}">
+                    <button class="btn btn-primary" type="submit">{{ $adminUi['save_course_info'] }}</button>
                 </form>
 
                 <div class="table-wrap">
                     <table style="min-width:100%;">
                         <thead>
                         <tr>
-                            <th>Course</th>
+                            <th>{{ $adminUi['course'] }}</th>
                             <th>Tagline</th>
-                            <th>Audience</th>
-                            <th>Updated</th>
+                            <th>{{ $adminUi['audience'] }}</th>
+                            <th>{{ $adminUi['updated'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -859,7 +930,7 @@
                                 <td>{{ \Illuminate\Support\Carbon::parse($row->updated_at)->format('d M Y H:i') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4">Belum ada course info custom.</td></tr>
+                            <tr><td colspan="4">{{ $adminUi['no_custom_course_info'] }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -868,30 +939,30 @@
         </section>
 
         <section class="panel view" id="manage-quiz">
-            <h2>Kelola Quiz</h2>
-            <p class="muted">Tambah soal manual atau minta AI membuat preview soal berdasarkan course, lore, difficulty, dan posisi pop quiz.</p>
+            <h2>{{ $adminUi['manage_quiz'] }}</h2>
+            <p class="muted">{{ $adminUi['manage_quiz_text'] }}</p>
             @php($adminAiPreview = session('admin_ai_question_preview'))
 
             <div class="cards-2">
                 <article class="card">
-                    <h3>AI Quiz Generator</h3>
+                    <h3>{{ $adminUi['ai_quiz_generator'] }}</h3>
                     <form class="fields" action="{{ route('admin.questions.ai.preview') }}" method="POST">
                         @csrf
                         <select name="course_key" required>
-                            <option value="">Pilih course target</option>
+                            <option value="">{{ $adminUi['choose_target_course'] }}</option>
                             @foreach($manageableCourses as $course)
                                 <option value="{{ $course->key }}" @selected(old('course_key', $adminAiPreview['course_key'] ?? '') == $course->key)>
                                     {{ $course->title }} ({{ ucfirst($course->difficulty) }})
                                 </option>
                             @endforeach
                         </select>
-                        <textarea name="generation_notes" placeholder="Comment / lore untuk AI. Jelaskan topik soal, gaya, fokus chapter, konsep yang harus dites, atau konteks pop quiz." required>{{ old('generation_notes', $adminAiPreview['generation_notes'] ?? '') }}</textarea>
+                        <textarea name="generation_notes" placeholder="{{ $adminUi['generation_notes_placeholder'] }}" required>{{ old('generation_notes', $adminAiPreview['generation_notes'] ?? '') }}</textarea>
                         <select name="difficulty" required>
                             <option value="beginner" @selected(old('difficulty', $adminAiPreview['difficulty'] ?? '') === 'beginner')>Beginner</option>
                             <option value="intermediate" @selected(old('difficulty', $adminAiPreview['difficulty'] ?? '') === 'intermediate')>Intermediate</option>
                             <option value="advanced" @selected(old('difficulty', $adminAiPreview['difficulty'] ?? '') === 'advanced')>Advanced</option>
                         </select>
-                        <input type="number" name="question_count" min="1" max="10" value="{{ old('question_count', $adminAiPreview['question_count'] ?? 5) }}" placeholder="How many questions?">
+                        <input type="number" name="question_count" min="1" max="10" value="{{ old('question_count', $adminAiPreview['question_count'] ?? 5) }}" placeholder="{{ $adminUi['question_count_placeholder'] }}">
                         <select name="question_type_mode" required>
                             <option value="mcq" @selected(old('question_type_mode', $adminAiPreview['question_type_mode'] ?? '') === 'mcq')>MCQ Only</option>
                             <option value="essay" @selected(old('question_type_mode', $adminAiPreview['question_type_mode'] ?? '') === 'essay')>Essay Only</option>
@@ -899,23 +970,23 @@
                             <option value="mixed_mcq_essay" @selected(old('question_type_mode', $adminAiPreview['question_type_mode'] ?? '') === 'mixed_mcq_essay')>Mixed MCQ + Essay</option>
                             <option value="mixed_all" @selected(old('question_type_mode', $adminAiPreview['question_type_mode'] ?? '') === 'mixed_all')>Mixed All Types</option>
                         </select>
-                        <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $adminAiPreview['placement_after_chapter'] ?? '') }}" placeholder="Insert after chapter (optional)">
-                        <p class="muted" style="margin:0;">Jika kamu isi posisi chapter, sistem otomatis menjadikannya pop quiz merah yang wajib diselesaikan sebelum lanjut.</p>
-                        <button class="btn btn-primary" type="submit">Preview Questions</button>
+                        <input type="number" name="placement_after_chapter" min="1" max="40" value="{{ old('placement_after_chapter', $adminAiPreview['placement_after_chapter'] ?? '') }}" placeholder="{{ $adminUi['insert_after_chapter_placeholder'] }}">
+                        <p class="muted" style="margin:0;">{{ $adminUi['auto_pop_quiz_note'] }}</p>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['preview_questions'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Tambah Soal Manual</h3>
+                    <h3>{{ $adminUi['manual_question'] }}</h3>
                     <form class="fields" action="{{ route('admin.questions.store') }}" method="POST">
                         @csrf
                         <select name="course_key" required>
-                            <option value="">Pilih course/quiz</option>
+                            <option value="">{{ $adminUi['choose_course_or_quiz'] }}</option>
                             @foreach($manageableCourses as $course)
                                 <option value="{{ $course->key }}">{{ $course->title }} ({{ ucfirst($course->difficulty) }})</option>
                             @endforeach
                         </select>
-                        <textarea name="question_text" placeholder="Tulis soal..." required></textarea>
+                        <textarea name="question_text" placeholder="{{ $adminUi['question_placeholder'] }}" required></textarea>
                         <select name="question_type" required>
                             <option value="mcq">MCQ</option>
                             <option value="essay">Essay</option>
@@ -926,36 +997,36 @@
                             <option value="intermediate">Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
-                        <input type="text" name="category" placeholder="Kategori soal">
-                        <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="Insert after chapter (optional)">
-                        <p class="muted" style="margin:0;">Isi posisi chapter jika soal ini harus otomatis muncul sebagai pop quiz merah / wajib perfect score.</p>
-                        <input type="text" name="correct_answer" placeholder="Jawaban benar (opsional)">
-                        <textarea name="options_json" placeholder='Pilihan JSON, ex: ["A","B","C","D"]'></textarea>
-                        <button class="btn btn-primary" type="submit">Simpan Soal</button>
+                        <input type="text" name="category" placeholder="{{ $adminUi['category'] }}">
+                        <input type="number" name="placement_after_chapter" min="1" max="40" placeholder="{{ $adminUi['insert_after_chapter_placeholder'] }}">
+                        <p class="muted" style="margin:0;">{{ $adminUi['auto_pop_quiz_note'] }}</p>
+                        <input type="text" name="correct_answer" placeholder="{{ $adminUi['correct_answer_placeholder'] }}">
+                        <textarea name="options_json" placeholder="{{ $adminUi['options_placeholder'] }}"></textarea>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['save_question'] }}</button>
                     </form>
                 </article>
             </div>
 
             @if(is_array($adminAiPreview) && !empty($adminAiPreview['questions']))
                 <div class="card" style="margin-top:12px;">
-                    <h3>AI Preview: {{ $adminAiPreview['course_title'] }}</h3>
-                    <p class="muted">Placement:
+                    <h3>{{ __('ui.admin.ai_preview', ['course' => $adminAiPreview['course_title']]) }}</h3>
+                    <p class="muted">{{ $adminUi['placement'] }}:
                         @if(!empty($adminAiPreview['placement_after_chapter']))
-                            after chapter {{ $adminAiPreview['placement_after_chapter'] }}
+                            {{ __('ui.admin.after_chapter', ['chapter' => $adminAiPreview['placement_after_chapter']]) }}
                         @else
-                            no pop quiz placement
+                            {{ $adminUi['no_pop_quiz_placement'] }}
                         @endif
-                        &bull; Type mode: {{ str_replace('_', ' ', $adminAiPreview['question_type_mode']) }}
+                        &bull; {{ $adminUi['type_mode'] }}: {{ str_replace('_', ' ', $adminAiPreview['question_type_mode']) }}
                     </p>
                     <div class="table-wrap">
                         <table>
                             <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Question</th>
-                                <th>Type</th>
-                                <th>Difficulty</th>
-                                <th>Answer / Options</th>
+                                <th>{{ $adminUi['question'] }}</th>
+                                <th>{{ $adminUi['type'] }}</th>
+                                <th>{{ $adminUi['difficulty'] }}</th>
+                                <th>{{ $adminUi['answer_options'] }}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -978,30 +1049,30 @@
                     </div>
                     <form action="{{ route('admin.questions.ai.save') }}" method="POST" style="margin-top:10px;">
                         @csrf
-                        <button class="btn btn-primary" type="submit">Save Preview To Question Bank</button>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['save_preview_to_bank'] }}</button>
                     </form>
                 </div>
             @endif
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Question Bank Tersimpan</h3>
-                <p class="muted">Bank soal sekarang dirapikan per item supaya lebih mudah discan, cek placement pop quiz, dan hapus soal lama tanpa tenggelam di tabel panjang.</p>
+                <h3>{{ $adminUi['stored_question_bank'] }}</h3>
+                <p class="muted">{{ $adminUi['stored_question_bank_text'] }}</p>
                 <div class="question-bank-summary">
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['total'] ?? 0 }}</strong>
-                        <span class="muted">Total stored questions</span>
+                        <span class="muted">{{ $adminUi['stored_total'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['pop_quiz'] ?? 0 }}</strong>
-                        <span class="muted">Pop quiz questions</span>
+                        <span class="muted">{{ $adminUi['stored_pop_quiz'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['ai'] ?? 0 }}</strong>
-                        <span class="muted">AI-generated</span>
+                        <span class="muted">{{ $adminUi['stored_ai'] }}</span>
                     </article>
                     <article class="question-bank-metric">
                         <strong>{{ $questionBankPresentation['summary']['manual'] ?? 0 }}</strong>
-                        <span class="muted">Manual entries</span>
+                        <span class="muted">{{ $adminUi['stored_manual'] }}</span>
                     </article>
                 </div>
                 <div class="question-bank-list">
@@ -1072,20 +1143,20 @@
         </section>
 
         <section class="panel view" id="gradebook">
-            <h2>Monitoring Hasil & Nilai</h2>
-            <p class="muted">Submissions overview, manual grading, export nilai.</p>
+            <h2>{{ $adminUi['scores_monitoring'] }}</h2>
+            <p class="muted">{{ $adminUi['scores_monitoring_text'] }}</p>
             <div style="margin-bottom: 10px;">
-                <a class="btn btn-ghost" href="{{ route('admin.grades.export') }}">Export Nilai (CSV)</a>
+                <a class="btn btn-ghost" href="{{ route('admin.grades.export') }}">Export Scores (CSV)</a>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                     <tr>
-                        <th>Student</th>
+                        <th>{{ $adminUi['student'] }}</th>
                         <th>Quiz</th>
                         <th>Auto Score</th>
                         <th>Manual Score</th>
-                        <th>Status</th>
+                        <th>{{ $adminUi['status'] }}</th>
                         <th>Submitted</th>
                         <th>Manual Grading</th>
                     </tr>
@@ -1105,19 +1176,19 @@
                                     @method('PATCH')
                                     <input type="number" min="0" max="100" step="0.01" name="manual_score" placeholder="0-100" required>
                                     <input type="text" name="remarks" placeholder="Catatan grading (opsional)">
-                                    <button class="btn btn-primary" type="submit">Save Grade</button>
+                                    <button class="btn btn-primary" type="submit">{{ $adminUi['save'] }} Grade</button>
                                 </form>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">Belum ada submission.</td></tr>
+                        <tr><td colspan="7">No submissions yet.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
 
             <div class="card" style="margin-top: 12px;">
-                <h3>Attendance Overview</h3>
+                <h3>{{ $adminUi['attendance_overview'] }}</h3>
                 <div class="cards-3">
                     <article class="card">
                         <strong style="display:block;font-size:22px;">{{ $attendanceStats['total_sessions'] ?? 0 }}</strong>
@@ -1125,7 +1196,7 @@
                     </article>
                     <article class="card">
                         <strong style="display:block;font-size:22px;">{{ $attendanceStats['attended_sessions'] ?? 0 }}</strong>
-                        <span class="muted">Attendance counted</span>
+                        <span class="muted">{{ $adminUi['attendance_counted'] }}</span>
                     </article>
                     <article class="card">
                         <strong style="display:block;font-size:22px;">{{ $attendanceStats['active_consistent_students'] ?? 0 }}</strong>
@@ -1137,11 +1208,11 @@
                     <table>
                         <thead>
                         <tr>
-                            <th>Student</th>
-                            <th>Course</th>
-                            <th>Date</th>
-                            <th>Progress</th>
-                            <th>Status</th>
+                            <th>{{ $adminUi['student'] }}</th>
+                            <th>{{ $adminUi['course'] }}</th>
+                            <th>{{ $adminUi['date'] }}</th>
+                            <th>{{ $adminUi['progress'] }}</th>
+                            <th>{{ $adminUi['status'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1153,12 +1224,12 @@
                                 <td>{{ $attendanceItem->chapters_completed }}/{{ $attendanceItem->target_chapters }} chapters</td>
                                 <td>
                                     <span class="status {{ $attendanceItem->is_attended ? 'active' : 'suspended' }}">
-                                        {{ $attendanceItem->is_attended ? 'Counted' : 'In Progress' }}
+                                        {{ $attendanceItem->is_attended ? $adminUi['counted'] : $adminUi['in_progress'] }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5">Belum ada data attendance.</td></tr>
+                            <tr><td colspan="5">{{ $adminUi['no_attendance'] }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -1167,40 +1238,40 @@
         </section>
 
         <section class="panel view" id="ai-analytics">
-            <h2>AI Dashboard & Analytics</h2>
-            <p class="muted">Pantau kesehatan belajar platform, konsistensi pengguna, dan performa dosen dalam satu pusat analitik.</p>
+            <h2>{{ $adminUi['ai_analytics'] }}</h2>
+            <p class="muted">{{ $adminUi['ai_analytics_text'] }}</p>
 
             <div class="cards-3">
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['active_learners'] ?? 0 }}</strong>
-                    <span class="muted">Active learners</span>
+                    <span class="muted">{{ $adminUi['active_learners'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['consistent_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Consistent mode adoption</span>
+                    <span class="muted">{{ $adminUi['consistent_adoption'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['avg_progress'] ?? 0 }}%</strong>
-                    <span class="muted">Average chapter progress</span>
+                    <span class="muted">{{ $adminUi['avg_progress'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['attendance_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Attendance success rate</span>
+                    <span class="muted">{{ $adminUi['attendance_rate'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['pop_quiz_mastery'] ?? 0 }}%</strong>
-                    <span class="muted">Pop quiz mastery</span>
+                    <span class="muted">{{ $adminUi['pop_quiz_mastery'] }}</span>
                 </article>
                 <article class="card">
                     <strong style="display:block;font-size:22px;">{{ $platformOverview['qa_answer_rate'] ?? 0 }}%</strong>
-                    <span class="muted">Q&amp;A response coverage</span>
+                    <span class="muted">{{ $adminUi['qa_coverage'] }}</span>
                 </article>
             </div>
 
             <div class="cards-2" style="margin-top:12px;">
                 <article class="card">
-                    <h3>7-Day Learning Momentum</h3>
-                    <p class="muted">Gabungan penyelesaian chapter dan attendance counted di seluruh platform selama 7 hari terakhir.</p>
+                    <h3>{{ $adminUi['seven_day_momentum'] }}</h3>
+                    <p class="muted">{{ $adminUi['seven_day_momentum_text'] }}</p>
                     <div class="analytics-bars">
                         @if(!empty($platformWeeklyRows))
                             @foreach($platformWeeklyRows as $row)
@@ -1211,40 +1282,40 @@
                                 </div>
                             @endforeach
                         @else
-                            <p class="muted">Belum ada momentum belajar yang bisa dianalisis.</p>
+                            <p class="muted">{{ $adminUi['no_momentum'] }}</p>
                         @endif
                     </div>
                 </article>
 
                 <article class="card">
-                    <h3>Learning Category Snapshot</h3>
-                    <p class="muted">Kategori dengan aktivitas submission tertinggi untuk membaca demand materi yang paling aktif.</p>
+                    <h3>{{ $adminUi['category_snapshot'] }}</h3>
+                    <p class="muted">{{ $adminUi['category_snapshot_text'] }}</p>
                     <div class="analytics-bars">
                         @forelse($learningAnalytics as $row)
                             <div class="bar">
-                                <div style="width: {{ min(100, $row->total * 10) }}%;">{{ $row->category }} - {{ $row->total }} activities</div>
+                                <div style="width: {{ min(100, $row->total * 10) }}%;">{{ $row->category }} - {{ $row->total }} {{ $adminUi['activities'] }}</div>
                             </div>
                         @empty
-                            <p class="muted">Belum ada category activity.</p>
+                            <p class="muted">{{ $adminUi['no_category_activity'] }}</p>
                         @endforelse
                     </div>
                 </article>
             </div>
 
             <div class="card" style="margin-top:12px;">
-                <h3>Course Health Radar</h3>
-                <p class="muted">Lihat course mana yang paling sehat, mana yang progresnya seret, dan di mana Q&amp;A mulai menumpuk.</p>
+                <h3>{{ $adminUi['course_health'] }}</h3>
+                <p class="muted">{{ $adminUi['course_health_text'] }}</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
                         <tr>
-                            <th>Course</th>
-                            <th>Mentor</th>
-                            <th>Students</th>
-                            <th>Avg Progress</th>
-                            <th>Attendance</th>
-                            <th>Pop Quiz Mastery</th>
-                            <th>Open Q&amp;A</th>
+                            <th>{{ $adminUi['course'] }}</th>
+                            <th>{{ $adminUi['mentor'] }}</th>
+                            <th>{{ $adminUi['students'] }}</th>
+                            <th>{{ $adminUi['avg_progress'] }}</th>
+                            <th>{{ $adminUi['attendance_rate'] }}</th>
+                            <th>{{ $adminUi['pop_quiz_mastery'] }}</th>
+                            <th>{{ $adminUi['open_qa'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1261,7 +1332,7 @@
                                 </tr>
                             @endforeach
                         @else
-                            <tr><td colspan="7">Belum ada course health data.</td></tr>
+                            <tr><td colspan="7">{{ $adminUi['no_course_health'] }}</td></tr>
                         @endif
                         </tbody>
                     </table>
@@ -1269,20 +1340,20 @@
             </div>
 
             <div class="card" style="margin-top:12px;">
-                <h3>Dosen Analytics</h3>
-                <p class="muted">Admin bisa langsung melihat dosen mana yang paling aktif, siapa yang butuh support, dan bagaimana kesehatan siswa di bawah mereka.</p>
+                <h3>{{ $adminUi['dosen_analytics'] }}</h3>
+                <p class="muted">{{ $adminUi['dosen_analytics_text'] }}</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
                         <tr>
-                            <th>Mentor</th>
-                            <th>Courses</th>
-                            <th>Active Learners</th>
-                            <th>Avg Progress</th>
-                            <th>Attendance</th>
-                            <th>Q&amp;A Response</th>
-                            <th>Pop Quiz Mastery</th>
-                            <th>Needs Attention</th>
+                            <th>{{ $adminUi['mentor'] }}</th>
+                            <th>{{ $adminUi['courses'] }}</th>
+                            <th>{{ $adminUi['active_learners'] }}</th>
+                            <th>{{ $adminUi['avg_progress'] }}</th>
+                            <th>{{ $adminUi['attendance_rate'] }}</th>
+                            <th>{{ $adminUi['qa_coverage'] }}</th>
+                            <th>{{ $adminUi['pop_quiz_mastery'] }}</th>
+                            <th>{{ $adminUi['needs_attention'] }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -1300,7 +1371,7 @@
                                 </tr>
                             @endforeach
                         @else
-                            <tr><td colspan="8">Belum ada data dosen analytics.</td></tr>
+                            <tr><td colspan="8">{{ $adminUi['no_dosen_analytics'] }}</td></tr>
                         @endif
                         </tbody>
                     </table>
@@ -1309,12 +1380,12 @@
 
             <div class="cards-2" style="margin-top:12px;">
                 <article class="card">
-                    <h3>AI Token Monitor</h3>
-                    <p class="muted">Total token: {{ number_format($tokenSummary->total_tokens ?? 0) }}</p>
-                    <p class="muted">Total biaya: ${{ number_format((float)($tokenSummary->total_cost ?? 0), 4) }}</p>
+                    <h3>{{ $adminUi['token_monitor'] }}</h3>
+                    <p class="muted">{{ $adminUi['total_tokens'] }}: {{ number_format($tokenSummary->total_tokens ?? 0) }}</p>
+                    <p class="muted">{{ $adminUi['total_cost'] }}: ${{ number_format((float)($tokenSummary->total_cost ?? 0), 4) }}</p>
                     <div class="table-wrap">
                         <table style="min-width: 100%;">
-                            <thead><tr><th>Provider</th><th>Model</th><th>Token</th></tr></thead>
+                            <thead><tr><th>{{ $adminUi['provider'] }}</th><th>{{ $adminUi['model'] }}</th><th>{{ $adminUi['token'] }}</th></tr></thead>
                             <tbody>
                             @forelse($tokenLogs as $log)
                                 <tr>
@@ -1323,7 +1394,7 @@
                                     <td>{{ number_format($log->token_count) }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="3">Belum ada token log.</td></tr>
+                                <tr><td colspan="3">{{ $adminUi['no_token_logs'] }}</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -1331,11 +1402,11 @@
                 </article>
 
                 <article class="card">
-                    <h3>AI Feedback Logs</h3>
-                    <p class="muted">Gunakan ini untuk membaca tone dan kebutuhan user yang sering muncul di interaksi AI.</p>
+                    <h3>{{ $adminUi['feedback_logs'] }}</h3>
+                    <p class="muted">{{ $adminUi['feedback_logs_text'] }}</p>
                     <div class="table-wrap">
                         <table style="min-width: 100%;">
-                            <thead><tr><th>Summary</th><th>Topic</th><th>Sentiment</th></tr></thead>
+                            <thead><tr><th>{{ $adminUi['summary'] }}</th><th>{{ $adminUi['topic'] }}</th><th>{{ $adminUi['sentiment'] }}</th></tr></thead>
                             <tbody>
                             @forelse($feedbackLogs as $item)
                                 <tr>
@@ -1344,7 +1415,7 @@
                                     <td>{{ $item->sentiment ?? '-' }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="3">Belum ada feedback log.</td></tr>
+                                <tr><td colspan="3">{{ $adminUi['no_feedback_logs'] }}</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -1354,68 +1425,68 @@
         </section>
 
         <section class="panel view" id="system-settings">
-            <h2>Pengaturan Global</h2>
-            <p class="muted">Maintenance mode, site identity, admin password.</p>
+            <h2>{{ $adminUi['system_settings'] }}</h2>
+            <p class="muted">{{ $adminUi['system_settings_text'] }}</p>
             <div class="cards-3">
                 <article class="card">
-                    <h3>Maintenance Mode</h3>
+                    <h3>{{ $adminUi['maintenance_mode'] }}</h3>
                     <form class="fields" action="{{ route('admin.settings.maintenance') }}" method="POST">
                         @csrf
                         <select name="mode" required>
-                            <option value="on">Enable Maintenance</option>
-                            <option value="off">Disable Maintenance</option>
+                            <option value="on">{{ $adminUi['enable_maintenance'] }}</option>
+                            <option value="off">{{ $adminUi['disable_maintenance'] }}</option>
                         </select>
-                        <button class="btn btn-primary" type="submit">Apply</button>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['apply'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Site Identity</h3>
+                    <h3>{{ $adminUi['site_identity'] }}</h3>
                     <form class="fields" action="{{ route('admin.settings.identity') }}" method="POST">
                         @csrf
                         <input type="text" name="site_name" value="{{ $settings['site_name'] ?? 'Skillify' }}" required>
-                        <input type="text" name="logo_url" value="{{ $settings['logo_url'] ?? '' }}" placeholder="Logo URL">
-                        <input type="text" name="theme_color" value="{{ $settings['theme_color'] ?? '#45d0ff' }}" required>
-                        <button class="btn btn-primary" type="submit">Save Identity</button>
+                        <input type="text" name="logo_url" value="{{ $settings['logo_url'] ?? '' }}" placeholder="{{ $adminUi['logo_url_placeholder'] }}">
+                        <input type="text" name="theme_color" value="{{ $settings['theme_color'] ?? '#45d0ff' }}" required placeholder="{{ $adminUi['theme_color_placeholder'] }}">
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['save_identity'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>Update Password</h3>
+                    <h3>{{ $adminUi['update_password'] }}</h3>
                     <form class="fields" action="{{ route('password.update') }}" method="POST">
                         @csrf
-                        <input type="password" name="current_password" placeholder="Current password" required>
-                        <input type="password" name="new_password" placeholder="New password" required>
-                        <input type="password" name="new_password_confirmation" placeholder="Confirm new password" required>
-                        <button class="btn btn-ghost" type="submit">Update Password</button>
+                        <input type="password" name="current_password" placeholder="{{ $adminUi['current_password_placeholder'] }}" required>
+                        <input type="password" name="new_password" placeholder="{{ $adminUi['new_password_placeholder'] }}" required>
+                        <input type="password" name="new_password_confirmation" placeholder="{{ $adminUi['confirm_new_password_placeholder'] }}" required>
+                        <button class="btn btn-ghost" type="submit">{{ $adminUi['update_password_button'] }}</button>
                     </form>
                 </article>
             </div>
 
             <div class="cards-2" style="margin-top: 12px;">
                 <article class="card">
-                    <h3>AI Chatbot Personality</h3>
+                    <h3>{{ $adminUi['chatbot_personality'] }}</h3>
                     <form class="fields" action="{{ route('admin.settings.chatbot') }}" method="POST">
                         @csrf
-                        <input type="text" name="chatbot_name" value="{{ $settings['chatbot_name'] ?? 'Skillify AI' }}" placeholder="Chatbot name" required>
-                        <input type="text" name="chatbot_welcome" value="{{ $settings['chatbot_welcome'] ?? 'Hi, I am here to help with your courses, roadmap, and study questions.' }}" placeholder="Welcome message" required>
-                        <input type="text" name="chatbot_placeholder" value="{{ $settings['chatbot_placeholder'] ?? 'Ask about this course, chapter, or your study plan...' }}" placeholder="Input placeholder" required>
-                        <textarea name="chatbot_personality" placeholder="Describe the chatbot personality and behavior." required>{{ $settings['chatbot_personality'] ?? "You are Skillify AI, a warm and capable learning assistant inside a digital skills platform. Help students understand lessons, stay motivated, break down concepts clearly, and suggest practical next steps. Keep answers supportive, concise, and easy to follow. Do not claim to have accessed grades or hidden platform data unless the user explicitly provides it in the chat." }}</textarea>
-                        <button class="btn btn-primary" type="submit">Save Chatbot</button>
+                        <input type="text" name="chatbot_name" value="{{ $settings['chatbot_name'] ?? 'Skillify AI' }}" placeholder="{{ $adminUi['chatbot_name_placeholder'] }}" required>
+                        <input type="text" name="chatbot_welcome" value="{{ $settings['chatbot_welcome'] ?? 'Hi, I am here to help with your courses, roadmap, and study questions.' }}" placeholder="{{ $adminUi['chatbot_welcome_placeholder'] }}" required>
+                        <input type="text" name="chatbot_placeholder" value="{{ $settings['chatbot_placeholder'] ?? 'Ask about this course, chapter, or your study plan...' }}" placeholder="{{ $adminUi['chatbot_input_placeholder'] }}" required>
+                        <textarea name="chatbot_personality" placeholder="{{ $adminUi['chatbot_personality_placeholder'] }}" required>{{ $settings['chatbot_personality'] ?? "You are Skillify AI, a warm and capable learning assistant inside a digital skills platform. Help students understand lessons, stay motivated, break down concepts clearly, and suggest practical next steps. Keep answers supportive, concise, and easy to follow. Do not claim to have accessed grades or hidden platform data unless the user explicitly provides it in the chat." }}</textarea>
+                        <button class="btn btn-primary" type="submit">{{ $adminUi['save_chatbot'] }}</button>
                     </form>
                 </article>
 
                 <article class="card">
-                    <h3>DeepSeek Setup</h3>
-                    <p class="muted">Put your API key in <code>digital-skill-platform/.env</code> with <code>DEEPSEEK_API_KEY=your_key_here</code>.</p>
-                    <p class="muted">Optional: set <code>DEEPSEEK_MODEL=deepseek-chat</code> if you want to override the default model used by the chatbot.</p>
-                    <p class="muted">This chatbot appears on student pages only and uses the personality you save here.</p>
+                    <h3>{{ $adminUi['deepseek_setup'] }}</h3>
+                    <p class="muted">{{ $adminUi['deepseek_note_1'] }}</p>
+                    <p class="muted">{{ $adminUi['deepseek_note_2'] }}</p>
+                    <p class="muted">{{ $adminUi['deepseek_note_3'] }}</p>
                 </article>
             </div>
         </section>
 
         <footer class="site-footer">
-            <p>&copy; {{ date('Y') }} Skillify Admin Control Center.</p>
+            <p>&copy; {{ date('Y') }} {{ $adminUi['footer'] }}</p>
         </footer>
     </main>
 </div>

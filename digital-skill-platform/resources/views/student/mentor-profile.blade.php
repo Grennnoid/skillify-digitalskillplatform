@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $mentor->name }} | Mentor Profile</title>
+    <title>{{ __('ui.student.mentor_profile_page', ['name' => $mentor->name]) }}</title>
     <style>
         :root {
             --bg: #040812;
@@ -214,8 +214,8 @@
 <div class="page">
 <div class="container">
     <div class="top">
-        <strong class="brand">Mentor Profile</strong>
-        <a href="{{ route('student.dashboard') }}">Back To Dashboard</a>
+        <strong class="brand">{{ __('ui.student.mentor_profile_title') }}</strong>
+        <a href="{{ route('student.dashboard') }}">{{ __('ui.student.back_to_dashboard') }}</a>
     </div>
 
     <section class="profile">
@@ -229,23 +229,23 @@
         <div>
             <h1>{{ $mentor->name }}</h1>
             <p class="muted">
-                Role: Dosen / Mentor<br>
-                Total Courses: {{ $courses->count() }}<br>
-                Bio: {{ $mentor->bio ?: 'Belum ada bio.' }}
+                {{ __('ui.student.role_label') }}: {{ __('ui.student.role_value') }}<br>
+                {{ __('ui.student.total_courses') }}: {{ $courses->count() }}<br>
+                {{ __('ui.student.bio') }}: {{ $mentor->bio ?: __('ui.student.no_bio') }}
             </p>
         </div>
     </section>
 
     <section class="courses">
-        <h2>Courses by {{ $mentor->name }}</h2>
+        <h2>{{ __('ui.student.courses_by', ['name' => $mentor->name]) }}</h2>
         <ul class="list">
             @forelse($courses as $course)
                 <li class="item">
                     <strong><a href="{{ route('courses.quiz.show', ['quiz' => $course->id]) }}">{{ $course->title }}</a></strong>
-                    <span>Category: {{ $course->category ?? 'General' }} • Difficulty: {{ ucfirst($course->difficulty ?? 'beginner') }}</span>
+                    <span>{{ __('ui.student.category') }}: {{ $course->category ?? __('ui.student.general') }} &bull; {{ __('ui.student.difficulty') }}: {{ ucfirst($course->difficulty ?? __('ui.student.beginner')) }}</span>
                 </li>
             @empty
-                <li class="item"><span>Mentor ini belum punya course.</span></li>
+                <li class="item"><span>{{ __('ui.student.mentor_no_courses') }}</span></li>
             @endforelse
         </ul>
     </section>
